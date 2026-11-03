@@ -28,6 +28,7 @@
 #include "DTAPI.h"
 #include "DtPlay.h"
 #include "DtSdiFileFmt.h"
+#include "sync.h"
 #include "DtOpt.h"
 
 #include "buffer.h"
@@ -1651,10 +1652,27 @@ void Player::LoopFile()
     DTAPI_RESULT dr;
     int FifoLoad, FifoSize;
     int MinFifoLoad;
-    void *addr;
     uint64_t bytes_consumed = 0;
-    struct timespec start_time;
+    uint64_t verbose_reduction = 0;
+    struct timespec start_time = { 0, 0 };
     struct timespec current_time;
+
+    // The first output's transmission drives the master clock (see sync.h):
+    // what the hardware has sent is bytes written minus what is still in the
+    // FIFO, converted to transport-stream time with the multiplex's 188-byte
+    // TS rate, the same rate the muxer's STC is built on.
+    const bool drives_master_clock = (output_pars->output_id == 0) &&
+        output_pars->bitrate > 0 &&
+        (output_pars->packet_size == 188 || output_pars->packet_size == 204);
+    if (output_pars->output_id == 0 && !drives_master_clock)
+        fprintf(stderr, "DtPlay: bitrate %d / packet size %d unusable, output is not the master clock\n",
+                output_pars->bitrate, output_pars->packet_size);
+    auto report_master_clock = [&](int load) {
+        if (!drives_master_clock || !TxStarted || load < 0 || (uint64_t) load > bytes_consumed)
+            return;
+        double packets = (double) (bytes_consumed - (uint64_t) load) / output_pars->packet_size;
+        sync_master_update(sync_monotonic_ns(), packets * 188.0 * 8.0 / output_pars->bitrate);
+    };
 
     // Init channel to hold mode
     dr = m_DtOutp.SetTxControl(DTAPI_TXCTRL_HOLD);
@@ -1676,6 +1694,8 @@ void Player::LoopFile()
     {
         // Check for free space in hardware FIFO.
         dr = m_DtOutp.GetFifoLoad(FifoLoad);
+        if ( dr == DTAPI_OK )
+            report_master_clock(FifoLoad);
         if ( (FifoLoad + c_BufSize)>=FifoSize )
         {
             // Sleep to wait for some free space
@@ -1696,11 +1716,12 @@ void Player::LoopFile()
 
         bytes_consumed += c_BufSize;
 
-        uint64_t verbose_reduction = 0;
-        if (!(verbose_reduction++ % 10))
+        if (TxStarted && !(verbose_reduction++ % 10))
         {
             clock_gettime(CLOCK_REALTIME, &current_time);
             dr = m_DtOutp.GetFifoLoad(FifoLoad);
+            if ( dr == DTAPI_OK )
+                report_master_clock(FifoLoad);
 
             if ( (current_time.tv_sec - start_time.tv_sec) != 0 )
             {
