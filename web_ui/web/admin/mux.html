@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>PTGA - mUXER</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="bs/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="bs/css/alpaca.min.css">
+    <!-- Custom CSS -->
+    <link href="bs/css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="bs/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">PTGA Muxer</a>
+            </div>
+            <!-- Top Menu Items -->
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li>
+                        <a href="index.html"><i class="fa fa-fw fa-dashboard"></i> Procesos</a>
+                    </li>
+                    <li>
+                        <a href="mux.html"><i class="fa fa-fw fa-cogs"></i> Configuración</a>
+                    </li>
+                    <li>
+                        <!--  <a href="app.html"><i class="fa fa-fw fa-bar-chart-o"></i> Aplicaciones interactivas</a> -->
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+
+
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <ol class="breadcrumb">
+                            <li>
+                                <i class="fa fa-cogs"></i>  <a href="mux.html">Configuración</a>
+                            </li>
+                            <li class="active">
+                                <i class="fa fa-file"></i> Muxer
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+                <!-- /.row -->
+		<div>
+
+
+		<form action="" method="POST" role="form" id="fullseg">
+			<legend>Configuración del canal FULLSEG y ONESEG</legend>
+		
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_pid">PID de Video</label>
+						</div>
+						<div class="col-sm-12">
+						<input type="text" name="video_pid" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="pcr_pid">PID de Program Clock Reference</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="pcr_pid" class="form-control">	
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="av_offset">Offset de Audio y Video</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="av_offset" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_input_format">Formato de entrada de video</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="video_input_format" id="video_input_format" class="form-control">
+								<option data-multiplo="30" value="480i5994">NTSC</option>    
+								<option data-multiplo="25" value="576i50">PAL</option>          
+								<option data-multiplo="25" value="1080i50">HD 1080i 50</option>   
+								<option data-multiplo="30" value="1080i5994">HD 1080i 59.94</option>     
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+
+
+
+
+
+
+			<div class="clearfix"></div>	
+			
+			<input type="hidden" name="ts_package_size" value="188">
+			<input type="hidden" name="card_number" value="0">
+
+	
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_bitrate">Bitrate de video FullSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="video_bitrate" class="form-control">								
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_output_format">Formato de salida de video FullSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="video_output_format" id="video_output_format" class="form-control">
+								<option value="480i5994" data-multiplo="30">NTSC</option>    
+								<option value="576i50" data-multiplo="25">PAL</option>          
+								<option value="1080p25" data-multiplo="25">HD 1080p 25</option>     
+								<option value="1080p2997" data-multiplo="30">HD 1080p 29.97</option>     
+								<option value="1080i50" data-multiplo="25">HD 1080i 50</option>     
+								<option value="1080i5994" data-multiplo="30">HD 1080i 59.94</option>     
+								<option value="720p25" data-multiplo="25">HD 720p 25</option>     
+								<option value="720p2997" data-multiplo="30">HD 720p 29.97</option>       
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="clearfix"></div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_bitrate_oneseg">Bitrate de video OneSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="oneseg_video_bitrate" class="form-control">								
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_output_format_oneseg">Formato de salida de video OneSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="oneseg_video_output_format" id="video_output_format_oneseg" class="form-control">
+								<option value="180p25" data-multiplo="25">180p25</option>
+								<option value="180p2997" data-multiplo="30">180p29.97</option>          
+								<option value="240p25" data-multiplo="25">240p25</option>
+								<option value="240p2997" data-multiplo="30">240p29.97</option>          
+								<option value="288p25"  data-multiplo="25">288p25</option> <!-- Solo para multiplo de 25 -->
+ 
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_input_type">Conexión de entrada de video</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="video_input_type" class="form-control">
+								<option value="HDMI">Hdmi</option>
+								<option value="COMPOSITE">Video compuesto</option>
+								 <option value="COMPONENT">Video por componentes</option>
+								 <option value="S-VIDEO">Super Video</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<input type="hidden" name="video_entropy_coding" value="CABAC">
+			<input type="hidden" name="video_gop_size" value="30">
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_noise_reduction">Reducción de ruido en el video</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="video_noise_reduction" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+					<div class="col-sm-12">
+						<label for="is_hd_service">Es un servicio HD</label>
+					</div>
+					<div class="col-sm-2">
+						Si <input type="radio" name="is_hd_service" value="Ture">
+					</div>
+					<div class="col-sm-2">
+					No <input type="radio" name="is_hd_service" value="False">
+					</div>
+					</div>
+				</div>
+			</div>
+	
+
+
+			<input type="hidden" name="number_audio" value="1">
+			<input type="hidden" name="audio_1_pid" value="0x0112">
+			<input type="hidden" name="audio_2_pid" value="0x0113">
+			<input type="hidden" name="audio_3_pid" value="0x0114">
+			<input type="hidden" name="audio_4_pid" value="0x0115">
+			<input type="hidden" name="audio_1_input_mask" value="0x0003">
+			<input type="hidden" name="audio_2_input_mask" value="0x0003">
+			<input type="hidden" name="audio_3_input_mask" value="0x0003">
+			<input type="hidden" name="audio_4_input_mask" value="0x0003">
+			<input type="hidden" name="audio_1_bitrate" value="128">
+			<input type="hidden" name="audio_2_bitrate" value="128">
+			<input type="hidden" name="audio_3_bitrate" value="128">
+			<input type="hidden" name="audio_4_bitrate" value="128">
+
+			<!-- ONESEG CONFIG -->
+			<input type="hidden" name="oneseg_is_hd_service" value="">
+			<input type="hidden" name="oneseg_video_pid" value="">
+			<input type="hidden" name="oneseg_pcr_pid" value="">
+				<!-- bitrate in form -->
+			<input type="hidden" name="oneseg_ts_package_size" value="188">
+			<input type="hidden" name="oneseg_card_number" value="">
+			<input type="hidden" name="oneseg_video_input_type" value="">
+			 	<!-- video input format same as fullseg -->
+				<!-- video output format in form -->
+			<input type="hidden" name="oneseg_video_entropy_coding" value="">
+			<input type="hidden" name="oneseg_video_gop_size" value="">
+			<input type="hidden" name="oneseg_video_noise_reduction" value="">
+			<input type="hidden" name="oneseg_number_audio" value="">
+			<input type="hidden" name="oneseg_audio_1_pid" value="">
+			<input type="hidden" name="oneseg_audio_2_pid" value="">
+			<input type="hidden" name="oneseg_audio_3_pid" value="">
+			<input type="hidden" name="oneseg_audio_4_pid" value="">
+			<input type="hidden" name="oneseg_audio_1_input_mask" value="">
+			<input type="hidden" name="oneseg_audio_2_input_mask" value="">
+			<input type="hidden" name="oneseg_audio_3_input_mask" value="">
+			<input type="hidden" name="oneseg_audio_4_input_mask" value="">
+			<input type="hidden" name="oneseg_audio_1_bitrate" value="">
+			<input type="hidden" name="oneseg_audio_2_bitrate" value="">
+			<input type="hidden" name="oneseg_audio_3_bitrate" value="">
+			<input type="hidden" name="oneseg_audio_4_bitrate" value="">
+			<input type="hidden" name="oneseg_av_offset" value="">
+
+			<div class="col-sm-12">
+				<button type="submit" class="btn btn-primary">Guardar</button>
+				<button type="button" class="btn btn-danger" id="guardar-reiniciar">Guardar y Reiniciar</button>
+			</div>
+		    </form>
+
+
+
+
+
+
+
+
+
+		<div class="clearfix"></div>
+		<br><br><br><br>
+
+
+		<form action="" method="POST" role="form" id="muxer">
+			<legend>Configuración Generál</legend>
+		
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@tsname">Nombre de la emisora</label>
+						</div>
+						<div class="col-sm-12">
+						<input type="text" name="@tsname" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@generatingstation">Indicativo de la emisora</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="@generatingstation" class="form-control">	
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@broadcastfrequency">Canal de transmición</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@broadcastfrequency" class="form-control">
+								<option value="177">7</option>
+								<option value="183">8</option>
+								<option value="189">9</option>
+								<option value="195">10</option>
+								<option value="201">11</option>
+								<option value="207">12</option>
+								<option value="213">13</option>
+								<option value="473">14</option>
+								<option value="479">15</option>
+								<option value="485">16</option>
+								<option value="491">17</option>
+								<option value="497">18</option>
+								<option value="503">19</option>
+								<option value="509">20</option>
+								<option value="515">21</option>
+								<option value="521">22</option>
+								<option value="527">23</option>
+								<option value="533">24</option>
+								<option value="539">25</option>
+								<option value="545">26</option>
+								<option value="551">27</option>
+								<option value="557">28</option>
+								<option value="563">29</option>
+								<option value="569">30</option>
+								<option value="575">31</option>
+								<option value="581">32</option>
+								<option value="587">33</option>
+								<option value="593">34</option>
+								<option value="599">35</option>
+								<option value="605">36</option>
+								<option value="617">38</option>
+								<option value="623">39</option>
+								<option value="629">40</option>
+								<option value="635">41</option>
+								<option value="641">42</option>
+								<option value="647">43</option>
+								<option value="653">44</option>
+								<option value="659">45</option>
+								<option value="665">46</option>
+								<option value="671">47</option>
+								<option value="677">48</option>
+								<option value="683">49</option>
+								<option value="689">50</option>
+								<option value="695">51</option>
+								<option value="701">52</option>
+								<option value="707">53</option>
+								<option value="713">54</option>
+								<option value="719">55</option>
+								<option value="725">56</option>
+								<option value="731">57</option>
+								<option value="737">58</option>
+								<option value="743">59</option>
+								<option value="749">60</option>
+								<option value="755">61</option>
+								<option value="761">62</option>
+								<option value="767">63</option>
+								<option value="773">64</option>
+								<option value="779">65</option>
+								<option value="785">66</option>
+								<option value="791">67</option>
+								<option value="797">68</option>
+								<option value="803">69</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@virtualchannel">Canal Virtual</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="@virtualchannel" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@countrycode">País</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@countrycode" class="form-control">
+								<option value="arg">Argentina</option>
+								<option value="bra">Brasil</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@guardinterval">Intervalo de guarda</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@guardinterval" class="form-control">
+								<option value="1/4">1/4</option>
+								<option value="1/8">1/8</option>
+								<option value="1/16">1/16</option>
+								<option value="1/32">1/32</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@modulationlayera">Modulación FullSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@modulationlayera" class="form-control">
+								<option value="qpsk">QPSK</option>
+								<option value="16qam">16-QAM</option>
+								<option value="64qam">64-QAM</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@modulationlayerb">Modulación OneSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@modulationlayerb" class="form-control">
+								<option value="qpsk">QPSK</option>
+								<option value="16qam">16-QAM</option>
+								<option value="64qam">64-QAM</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@codingratelayera">Coding rate FullSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@codingratelayera" class="form-control">
+								<option value="1/2">1/2</option>
+								<option value="2/3">2/3</option>
+								<option value="3/4">3/4</option>
+								<option value="4/5">4/5</option>	
+								<option value="5/6">5/6</option>
+								<option value="7/8">7/8</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@codingratelayerb">Coding rate OneSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<select name="@codingratelayerb" class="form-control">
+								<option value="1/2">1/2</option>
+								<option value="2/3">2/3</option>
+								<option value="3/4">3/4</option>
+								<option value="4/5">4/5</option>	
+								<option value="5/6">5/6</option>
+								<option value="7/8">7/8</option>
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clearfix"></div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@interleavinglayera">Interleaving FullSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="@interleavinglayera" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="@interleavinglayerb">Interleaving OneSeg</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="@interleavinglayerb" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="clearfix"></div>
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="potencia">Potencia <small>(-33 a -3)</small></label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="potencia" class="form-control" id="potencia">
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="clearfix"></div>
+			<div class="col-sm-12">
+				<button type="submit" class="btn btn-danger" id="guardar-reiniciar">Guardar y Reiniciar</button>
+			</div>
+		    </form>
+			<br><br><br><br>
+
+
+
+
+
+		</div>
+
+				<!-- <div id="configform"></div> -->
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- jQuery y otros-->
+    <script src="bs/js/jquery.js"></script>
+    <script src="bs/js/bootstrap-checkbox.min.js"></script>
+    <script src="bs/js/handlebars.min.js"></script>
+    <script src="bs/js/alpaca.min.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="bs/js/bootstrap.min.js"></script>
+    <!-- Muxer GUI JavaScript -->
+   	<script src="js/mux.js"></script>
+</body>
+
+</html>

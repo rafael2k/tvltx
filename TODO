@@ -1,0 +1,6 @@
+- Usar timestamps obtidos via API
+- Corrigir TMM 100% de CPU
+- Verificar se nao geramos timestamps errados nos PES no caso de perdas de quadro de video/audio na entrada via placa de captura
+- Implementar o ajuste elastico para correção de clock drift das placas de captura e reprodução
+- Transmissao de app Ginga no linux nao funciona
+- Escrever documentacao com os novos recursos do TVLTX/TMM

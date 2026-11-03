@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<tmm projectname="Nagasoft Provider">
+	<head>
+		<meta name="author" content="Felippe Nagato"/>
+        <meta name="company" content="Nagasoft Lab"/>
+		<meta name="description" content="This project multiplexes 2 services from a V4L2 + ALSA capture device."/>
+	</head>
+	<body>
+          <physical>
+            <!-- V4L2 + ALSA capture (USB/PCIe HDMI grabber, analog capture board, webcam).
+                 videodevice: V4L2 node (default /dev/video<cardnumber>)
+                 audiodevice: ALSA PCM, e.g. "hw:1,0", "plughw:1", "default", or "none" for silence
+                 videostd:    analog only: auto, pal-m, ntsc, pal, pal-n, pal-nc, secam
+                 type:        selects the device input by name (composite, svideo, hdmi, ...) -->
+            <inputcard id="0" cardnumber="0" brand="v4l2" type="hdmi"
+                       mode="720-P-30" numaudiochannels="2"
+                       videodevice="/dev/video0" audiodevice="plughw:1,0" />
+			<outputcard id="0" cardnumber="0" brand="dektec" type="modulation" bitrate="29958294" packetsize="204" frequency="485250000" txpower="-18" />
+          </physical>
+		<inputs>
+			<av id="my-video1" srctype="sharedmemory"
+                            readsrcas="pes" src="video-0_0.pes"
+                            streamtype="27" refinputcardid="0"
+                            bitrate="10000" gopsize="30" mode="720-P-30"/>
+
+			<av id="my-audio1" srctype="sharedmemory"
+                            readsrcas="pes" src="audio-0_0.pes"
+                            streamtype="17" refinputcardid="0"
+                            bitrate="96" layout="2.0" mapping="0,1"
+                            />
+
+			<av id="my-video2" srctype="sharedmemory"
+                            readsrcas="pes" src="video-1_0.pes"
+                            streamtype="27" refinputcardid="0"
+                            bitrate="280" gopsize="30" mode="180-P-30"
+                            />
+
+			<av id="my-audio2" srctype="sharedmemory"
+                            readsrcas="pes" src="audio-1_0.pes"
+                            streamtype="17" refinputcardid="0"
+                            bitrate="24" layout="2.0" mapping="0,1"
+                            />
+
+			<eit id="my-eit1" layer="b">
+				<event eventid="1" time="2018-01-12T20:00:00" dur="3600000" >
+					<shortevent name="Novidades da tecnologia" text="As novidades da tecnologia em 5 minutos." language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="generalaudiences" objectivecontentdescription="" />
+				</event>
+				<event eventid="2" time="2018-01-12T21:00:00" dur="3600000" >
+					<shortevent name="Vídeos Nagasoft" text="Coleção de vídeos do laboratório de 2015." language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="16" objectivecontentdescription="violence,sex" />
+				</event>
+				<event eventid="3" time="2018-01-12T22:00:00" dur="3600000" >
+					<shortevent name="Horario politico" text="Nao assista!" language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="18" objectivecontentdescription="violence,sex,drugs" />
+				</event>
+			</eit>
+			
+			<eit id="my-eit2" layer="b">
+				<event eventid="1" time="2018-01-12T20:00:00" dur="3600000" >
+					<shortevent name="Novidades da tecnologia 2" text="As novidades da tecnologia em 5 minutos." language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="generalaudiences" objectivecontentdescription="" />
+				</event>
+				<event eventid="2" time="2018-01-12T21:00:00" dur="3600000" >
+					<shortevent name="Vídeos Nagasoft 2" text="Coleção de vídeos do laboratório de 2015." language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="16" objectivecontentdescription="violence,sex" />
+				</event>
+				<event eventid="3" time="2018-01-12T22:00:00" dur="3600000" >
+					<shortevent name="Horario politico 2" text="Nao assista!" language="por" />
+					<component streamcontent="5" componenttype="195" ctag="0" language="por" text="" />
+					<parentalrating countrycode="BRA" agerating="18" objectivecontentdescription="violence,sex,drugs" />
+				</event>
+			</eit>
+
+			<pmt id="my-pmt1" servicenumber="0" pid="1000" pcrpid="256" name="Nagasoft HD"
+					servicetype="tv" eitid="my-eit1" eitsched="8">
+				<es refid="my-video1" pid="1001" ctag="0"/>
+				<es refid="my-audio1" pid="1002" ctag="16">
+					<aac profileandlevel="46"/>
+					<iso639language language="por" audiotype="0"/>
+				</es>
+			</pmt>
+			
+			<pmt id="my-pmt2" servicenumber="0" pcrpid="257" name="Nagasoft 1-seg"
+					servicetype="oneseg" eitid="my-eit2" eitsched="8">
+				<es refid="my-video2" pid="2001"/>
+				<es refid="my-audio2" pid="2002"/>
+			</pmt>
+			
+		</inputs>
+
+		<output dest="out-nagasoft.ts" desttype="physical" name="Nagasoft Network" tsname="Nagasoft TV"
+				generatingstation="zyb522" usesystime="true" time="2018-01-12T20:05:00" daylightsavingtime="true" 
+				fu="rj" microregion="rio de janeiro" countrycode="bra" countryregionid="rj" loop="false" vbv="1000"
+				bitrate="16000000" packetsize="204" packetspermessage="10" stcbegin="10" live="true"
+				usepipe="false" externalapp="DtPlay-Windows.exe"
+				appparams="out-nagasoft.ts -p -mt ISDBT -ml -27.0 -mf 485.143 -m 204"
+				partialreception="true" broadcastfrequency="485" virtualchannel="1"
+				guardinterval="1/16" transmissionmode="3"
+				modulationlayera="qpsk" codingratelayera="5/6" numsegmentlayera="1" interleavinglayera="2"
+				modulationlayerb="64qam" codingratelayerb="3/4" numsegmentlayerb="12" interleavinglayerb="2"
+				modulationlayerc="" codingratelayerc="" numsegmentlayerc="0" interleavinglayerc="">
+			<item>
+				<pmtref pmtid="my-pmt1"/>
+				<pmtref pmtid="my-pmt2"/>
+			</item>
+		</output>
+
+	</body>
+</tmm>

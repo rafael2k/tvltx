@@ -1,0 +1,64 @@
+WEB UI
+
+
+COMPONENTES
+* Python
+* Liberias de Python (zipfile, bottle, lxml, python-psutil)
+* HTML5 (Bootstrap y jQuery)
+
+LIBERIAS PYHON:
+Zipfile y Bottle (webserver) están incluidas en el directorio, mientras que lxml y psutil hay que instalarlas. Los paquetes alien están dentro de libs y se puede instalar en slackware 14.1
+
+COMO FUNCIONA
+Mediante el archivo server.py se inicia un servidor web en el puerto 8080. Ahi están escritas las rutas y las acciones a realizar en cada ruta.
+
+--Rutas:
+
+/sys/status/<process>:
+	Busca si el proceso se encuentra acivo
+
+/sys/run/<process>
+	Ejectura el proceso sumandolé la extención '.sh'
+
+/sys/input/video:
+	Mira el estado de la entrada del video en el archivo
+	/etc/tvltx.input
+
+/sys/cpu/
+	Retorna el estado del CPU, memoria, disco rígido e IP de la red
+
+/read/config/fullseg/
+	Lee el json de fullseg y oneseg para que lo pueda cargar la GUI
+
+/save/config/fullseg (POST)
+	Guarda la configuración del fullseg y oneseg en formato json en txltw.fullseg y luego lo parsea con parse-fullseg.py en sus respectivos archvivos en /etc/
+
+/read/config/muxer/ (Pendiente)
+	Lee el json de la configuración del muxer para que lo pueda cargar al GUI
+
+/save/config/muxer/ (Pendiente, POST)
+	Guarda la configuración del muxer en formato json en muxer.json y luego lo parsea con parse-muxer.py en el archivo xml en /etc/
+
+/app/upload/ (Pendiente, POST)
+	Sube la aplicación y la descoprime en /root/run_path/apps/ ademas crea un archivo de configuración con el nombre y fichero principal NCL
+
+/app/list/ (Pendiente)
+	Retorna el listado de aplicaciones disponibles
+
+/app/select/ (Pendiente, POST)
+	Cambia la aplicación activa en la configuración XML
+
+/app/delete/ (Pendiente, POST)
+	Borra el directorio de la aplicacion y su contenido
+
+
+
+
+
+ARCHIVOS Y DIRECTORIOS EXTERNOS UTILIZADOS POR LA GUI
+/etc/tvltx.fullseg
+/etc/tvltx.oneseg
+/etc/tvltx.rf (frecuencia y potencia)
+/etc/tvltx.input
+/etc/tvltx.muxer.xml
+/root/run_path/apps/<nombre>/<ncl>

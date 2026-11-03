@@ -1,0 +1,34 @@
+               -- TV Lovers Transmitter --
+
+A solution for creating a 100% free software/hardware ISDB-T transmitter, in
+order to enable free speech over the electromagnetic spectrum!
+
+For this we'll need:
+
+- I/O boards support (A/V input) (DONE)
+- A/V Encoder (DONE)
+- Multiplex (DONE)
+- Data inserter (DSM-CC, SI tables, ...) (DONE)
+- Closed Caption encoder (WIP)
+- Modulator (VHDL? GNU-Radio?) (WIP)
+- RF and Power amplifier schemes (wIP)
+- GUI Web (WIP)
+
+This project contains code written by PUC-Rio/TeleMidia Lab and other
+partners.
+
+
+More documentation comming soon!
+
+LVLTx uses the GNU Affero license (please read LICENSE file) and
+it's not allowed to be used for commercial purposes.
+
+!! Not for commercial use !!
+
+In memoriam of Professor Luiz Fernando Gomes Soares.
+
+Contact the authors:
+Felipe Nagato   fnagato@riseup.net
+Rafael Diniz    rafael@riseup.net
+
+Copyright SDR Telecom and Nagasoft.

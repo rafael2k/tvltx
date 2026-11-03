@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>PTGA - mUXER</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="bs/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="bs/css/alpaca.min.css">
+    <!-- Custom CSS -->
+    <link href="bs/css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="bs/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">PTGA Muxer</a>
+            </div>
+            <!-- Top Menu Items -->
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li>
+                        <a href="index.html"><i class="fa fa-fw fa-dashboard"></i> Procesos</a>
+                    </li>
+                    <li>
+                        <a href="mux.html"><i class="fa fa-fw fa-cogs"></i> Configuración</a>
+                    </li>
+                    <li>
+                        <a href="app.html"><i class="fa fa-fw fa-bar-chart-o"></i> Aplicaciones interactivas</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+
+
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <ol class="breadcrumb">
+                            <li>
+                                <i class="fa fa-cogs"></i>  <a href="app.html">Ginga</a>
+                            </li>
+                            <li class="active">
+                                <i class="fa fa-file"></i> Subir aplicación
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+                <!-- /.row -->
+		<div>
+
+
+		<form action="/upload/app" method="POST"  enctype="multipart/form-data" role="form" id="app-upload">
+			<legend>Subir la aplicación comprimida</legend>
+		
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="video_pid">Archivo (zip o tar.gz)</label>
+						</div>
+						<div class="col-sm-12">
+						<input type="file" name="upload" class="form-control">
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="col-sm-6">
+				<div class="form-group">
+					<div class="row">
+						<div class="col-sm-12">
+							<label for="pcr_pid">Nombre del archivo NCL principal</label>
+						</div>
+						<div class="col-sm-12">
+							<input type="text" name="ncl" class="form-control">	
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="clearfix"></div>
+
+			
+<div class="col-sm-6">
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <label for="pcr_pid">Nombre de la aplicacion (sin espacios ni caracteres especiales)</label>
+                        </div>
+                        <div class="col-sm-12">
+                            <input type="text" name="nombre" class="form-control"> 
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+			<div class="col-sm-12">
+				<button type="submit" class="btn btn-primary">Guardar</button>
+				<button type="button" class="btn btn-danger" id="guardar-reiniciar">Guardar y Reiniciar</button>
+			</div>
+		    </form>
+		</div>
+
+				<!-- <div id="configform"></div> -->
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- jQuery y otros-->
+    <script src="bs/js/jquery.js"></script>
+    <script src="bs/js/bootstrap-checkbox.min.js"></script>
+    <script src="bs/js/handlebars.min.js"></script>
+    <script src="bs/js/alpaca.min.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="bs/js/bootstrap.min.js"></script>
+    <!-- Muxer GUI JavaScript -->
+   	<script src="js/app.js"></script>
+</body>
+
+</html>

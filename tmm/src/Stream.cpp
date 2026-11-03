@@ -1,0 +1,163 @@
+/******************************************************************************
+    Copyright (c) 1989-2015 PUC-Rio/Laboratorio TeleMidia
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*******************************************************************************/
+
+/*
+ * Stream.cpp
+ *
+ *  Created on: 05/02/2013
+ *      Author: Felippe Nagato
+ */
+
+#include "Stream.h"
+
+namespace br {
+namespace pucrio {
+namespace telemidia {
+namespace tool {
+
+Stream::Stream() {
+	maxBufferLength = 10;
+	nextSend = SYSTEM_CLOCK_FREQUENCY;
+	period = SYSTEM_CLOCK_FREQUENCY;
+	preponeTicks = 0;
+	projectId = -1;
+}
+
+Stream::~Stream() {
+	releaseBufferList();
+}
+
+void Stream::setProjectId(int id) {
+	projectId = id;
+}
+
+int Stream::getProjectId() {
+	return projectId;
+}
+
+void Stream::setCurrStc(int64_t stc) {
+	currStc = stc;
+}
+
+bool Stream::getBuffer(Buffer** buffer) {
+	if (bufferList.size()) {
+		(*buffer)->buffer = bufferList[0]->buffer + bufferList[0]->pos;
+		(*buffer)->pos = 0;
+		if ((bufferList[0]->size - bufferList[0]->pos) > maxBytesRate) {
+			(*buffer)->size = maxBytesRate;
+		} else {
+			(*buffer)->size = bufferList[0]->size - bufferList[0]->pos;
+		}
+		(*buffer)->startIndicator = (bufferList[0]->pos == 0);
+		return true;
+	}
+	return false;
+}
+
+unsigned int Stream::getBufferSize() {
+	return bufferList.size();
+}
+
+bool Stream::disposeBuffer() {
+	if (bufferList.size()) {
+		if ((bufferList[0]->size - bufferList[0]->pos) > maxBytesRate) {
+			bufferList[0]->pos += maxBytesRate;
+		} else {
+			bufferList[0]->pos += (bufferList[0]->size - bufferList[0]->pos);
+		}
+		if (bufferList[0]->pos == bufferList[0]->size) {
+			delete bufferList[0]->buffer;
+			delete *(bufferList.begin());
+			bufferList.erase(bufferList.begin());
+			return true;
+		}
+	}
+	return false;
+}
+
+void Stream::setMaxBufferLength(unsigned int max) {
+	maxBufferLength = max;
+}
+
+unsigned int Stream::getMaxBufferLength() {
+	return maxBufferLength;
+}
+
+void Stream::releaseBufferList() {
+	vector<Buffer*>::iterator it;
+
+	for (it = bufferList.begin(); it != bufferList.end(); it++) {
+		if ((*it)->buffer) delete ((*it)->buffer);
+		delete (*it);
+	}
+	bufferList.clear();
+}
+
+void Stream::initiateNextSend(int64_t stc) {
+	nextSend = stc;
+	maxBytesRate = maxBitrate / 8;
+}
+
+void Stream::updateNextSend(int64_t stc) {
+	nextSend += period;
+}
+
+int64_t Stream::getNextSend() {
+	return nextSend;
+}
+
+void Stream::setPeriod(unsigned int freq) {
+	period = freq;
+}
+
+unsigned int Stream::getPeriod() {
+	return period;
+}
+
+void Stream::setMaxBitrate(unsigned int rate) {
+	maxBitrate = rate;
+	maxBytesRate = maxBitrate / 8;
+}
+
+unsigned int Stream::getMaxBitrate() {
+	return maxBitrate;
+}
+
+void Stream::setType(unsigned char type) {
+	this->type = type;
+}
+
+unsigned char Stream::getType() {
+	return type;
+}
+
+void Stream::setPreponeTicks(unsigned int ticks) {
+	preponeTicks = ticks;
+}
+
+unsigned int Stream::getPreponeTicks() {
+	return preponeTicks;
+}
+
+
+}
+}
+}
+}
+
+

@@ -1,0 +1,18 @@
+// DtIsdbtPars.m_Guard - Guard interval
+#define DTAPI_ISDBT_GUARD_1_32      0
+#define DTAPI_ISDBT_GUARD_1_16      1
+#define DTAPI_ISDBT_GUARD_1_8       2
+#define DTAPI_ISDBT_GUARD_1_4       3
+
+// DtIsdbtLayerPars.m_Modulation - Modulation type
+#define DTAPI_ISDBT_MOD_DQPSK       0
+#define DTAPI_ISDBT_MOD_QPSK        1
+#define DTAPI_ISDBT_MOD_QAM16       2
+#define DTAPI_ISDBT_MOD_QAM64       3
+
+// DtIsdbtLayerPars.m_CodeRate - Code rate
+#define DTAPI_ISDBT_RATE_1_2        0
+#define DTAPI_ISDBT_RATE_2_3        1
+#define DTAPI_ISDBT_RATE_3_4        2
+#define DTAPI_ISDBT_RATE_5_6        3
+#define DTAPI_ISDBT_RATE_7_8        4

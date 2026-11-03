@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>PTGA - mUXER</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="bs/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="bs/css/alpaca.min.css">
+    <!-- Custom CSS -->
+    <link href="bs/css/sb-admin.css" rel="stylesheet">
+
+    <!-- Custom Fonts -->
+    <link href="bs/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="index.html">PTGA Muxer</a>
+            </div>
+
+            <!-- Top Menu Items -->
+            <ul class="nav navbar-right top-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-gear"></i> Sistema    <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a href="../sys/reboot"><i class="fa fa-fw fa-refresh"></i> Reiniciar</a>
+                        </li>
+                        <li>
+                            <a href="../sys/poweroff"><i class="fa fa-fw fa-power-off"></i> Apagar</a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <!-- /.navbar-top-links -->
+            <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li>
+                        <a href="index.html"><i class="fa fa-fw fa-dashboard"></i> Procesos</a>
+                    </li>
+                    <li>
+                        <a href="mux.html"><i class="fa fa-fw fa-cogs"></i> Configuración</a>
+                    </li>
+                    <li>
+                        <!--  <a href="app.html"><i class="fa fa-fw fa-bar-chart-o"></i> Aplicaciones interactivas</a> -->
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </nav>
+
+        <div id="page-wrapper">
+
+            <div class="container-fluid">
+                <br><br>
+                <!-- /.row -->
+                <div class="row">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <div class="row">
+                                    <div class="col-xs-3">
+                                        <i class="fa fa-gears fa-5x"></i>
+                                    </div>
+                                    <div class="col-xs-9 text-right">
+                                        <div class="huge" id="status-cpu">%</div>
+                                        <div>de CPU en uso</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <div class="row">
+                                    <div class="col-xs-3">
+                                        <i class="fa fa-bolt fa-5x"></i>
+                                    </div>
+                                    <div class="col-xs-9 text-right">
+                                        <div class="huge" id="status-memory">%</div>
+                                        <div>de RAM en uso</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                         <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <div class="row">
+                                    <div class="col-xs-3">
+                                        <i class="fa fa-tasks fa-5x"></i>
+                                    </div>
+                                    <div class="col-xs-9 text-right">
+                                        <div class="huge" id="status-disk">%</div>
+                                        <div>de espacio utilizado</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <div class="panel panel-primary">
+                            <div class="panel-heading">
+                                <div class="row">
+                                    <div class="col-xs-3">
+                                        <i class="fa fa-comments fa-5x"></i>
+                                    </div>
+                                    <div class="col-xs-9 text-right">
+                                        <div style="font-size:20px" id="status-ip">0.0.0.0</div>
+                                        <div>Dirección de IP local </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page Heading -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <h1 class="page-header">
+                            Estado del Mux
+                            <small></small>
+                        </h1>
+                        <ol class="breadcrumb">
+                            <li>
+                                <i class="fa fa-cogs"></i>  <a href="mux.html">Configuración</a>
+                            </li>
+                            <li class="active">
+                                <i class="fa fa-file"></i> Muxer
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <div class="estado-bts_tx btn btn-primary">Cargando...</div>
+
+                        <label class="control-label" for="estado-bts_tx">Estado Mux</label><br>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="estado-x264" name="estado-x264" checked="checked" disabled>
+                        <label class="control-label" for="estado-x264">Estado Encoder x264</label><br>
+                    </div>
+                    <div class="form-group">
+                        <input type="checkbox" id="estado-video" name="estado-video" checked="checked" disabled>
+                        <label class="control-label" for="estado-video">Input de video</label><br>
+                    </div>
+
+                </div>
+            </div>
+            <!-- /.container-fluid -->
+
+        </div>
+        <!-- /#page-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- jQuery -->
+    <script src="bs/js/jquery.js"></script>
+    <script src="bs/js/bootstrap-checkbox.min.js"></script>
+    <script src="bs/js/handlebars.min.js"></script>
+    <script src="bs/js/alpaca.min.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="bs/js/bootstrap.min.js"></script>
+    <!-- Muxer GUI JavaScript -->
+    <script src="js/main.js"></script>
+</body>
+
+</html>

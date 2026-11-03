@@ -1,0 +1,31 @@
+diff --git a/libmpeg2/include/util/functions.h b/libmpeg2/include/util/functions.h
+index 94508d1..c71b09d 100644
+--- a/libmpeg2/include/util/functions.h
++++ b/libmpeg2/include/util/functions.h
+@@ -56,7 +56,6 @@ namespace util {
+ 	string lowerCase(string s);
+ 	bool isNumeric(void* value);
+ 	string itos(double i);
+-	float stof(string s);
+ 	float itof(int i);
+ 	string extractFilename(string filename);
+ 	string absoluteFile(string basePath, string filename);
+diff --git a/libmpeg2/src/util/functions.cpp b/libmpeg2/src/util/functions.cpp
+index f827a69..5539562 100644
+--- a/libmpeg2/src/util/functions.cpp
++++ b/libmpeg2/src/util/functions.cpp
+@@ -122,14 +122,6 @@ namespace util {
+ 		return os.str();
+ 	}
+ 
+-	float stof(string s) {
+-		float f = 0.0f;
+-		stringstream ss;
+-		ss << s;
+-		ss >> f;
+-		return f;
+-	}
+-
+ 	float itof(int i) {
+ 		string s = itos(i);
+ 		return stof(s);
