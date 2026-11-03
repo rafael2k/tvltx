@@ -267,13 +267,13 @@ void *encoder_video_thread(void *service_v)
     case VIDEO_MODE_480_I_5994:
         strcpy(interlaced, " --bff ");
         if (fps_num == 30000 && fps_den == 1001)
-            strcpy(output_resolution, " --vf resize:720,486 ");
+            strcpy(output_resolution, " --vf resize:720,480 ");
         else
             goto fps_mismatch;
         break;
     case VIDEO_MODE_480_P_2997:
         if (fps_num == 30000 && fps_den == 1001)
-            strcpy(output_resolution, " --vf resize:720,486 ");
+            strcpy(output_resolution, " --vf resize:720,480 ");
         else
             goto fps_mismatch;
         break;
@@ -353,6 +353,20 @@ void *encoder_video_thread(void *service_v)
 
     if (input->video_input_mode == service->video_output_mode)
         output_resolution[0] = 0;
+
+    // 525-line inputs are 720x486 (SDI); encode 720x480 with the usual crop of
+    // 4 top and 2 bottom lines (even, so the field order is kept): x264 needs
+    // a height divisible by 4 for interlaced 4:2:0
+    if (input->video_input_mode == VIDEO_MODE_480_I_5994 ||
+        input->video_input_mode == VIDEO_MODE_480_P_2997) {
+        char vf_chain[128];
+        const char *resize = strstr(output_resolution, "resize:");
+        if (resize)
+            snprintf(vf_chain, sizeof(vf_chain), " --vf crop:0,4,0,2/%s", resize);
+        else
+            snprintf(vf_chain, sizeof(vf_chain), " --vf crop:0,4,0,2 ");
+        strcpy(output_resolution, vf_chain);
+    }
 
     // x264 command line creation
     sprintf(x264_cmd, "x264 --aud --nal-hrd cbr --vbv-init 1.0 --demuxer lavf %s -B %d --vbv-maxrate %d --vbv-bufsize %d  --min-keyint %d --keyint %d %s %s %s %s -o %s ",
