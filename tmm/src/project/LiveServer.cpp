@@ -24,6 +24,8 @@
  */
 
 #include "project/LiveServer.h"
+#include <cstring>
+#include <cerrno>
 
 using namespace std;
 
@@ -56,14 +58,9 @@ int LiveServer::openSocketUdp() {
 	}
 #endif
 	sockUdp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	memset(&serverAddr, 0, sizeof(serverAddr));
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddr.sin_port = htons(UDP_PORT);
-	if (bind(sockUdp, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
-		if (showErrorMessages) cout << "Error binding socket." << endl;
-		return -2;
-	}
+	// Non-blocking before bind(): the muxer polls this socket on every cycle,
+	// so it must never block, even when bind() fails (e.g. UDP_PORT < 1024
+	// without root), in which case live editing is simply unavailable.
 #ifdef WIN32
 	u_long iMode = 1; //non blocking
 	ioctlsocket(sockUdp, FIONBIO, &iMode);
@@ -72,6 +69,20 @@ int LiveServer::openSocketUdp() {
 	flags |= O_NONBLOCK; //non blocking
 	fcntl(sockUdp, F_SETFL, flags);
 #endif
+	memset(&serverAddr, 0, sizeof(serverAddr));
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	serverAddr.sin_port = htons(UDP_PORT);
+	if (bind(sockUdp, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) == -1) {
+#ifdef WIN32
+		cout << "LiveServer: cannot bind UDP port " << UDP_PORT
+			 << ", live editing disabled." << endl;
+#else
+		cout << "LiveServer: cannot bind UDP port " << UDP_PORT << " ("
+			 << strerror(errno) << "), live editing disabled." << endl;
+#endif
+		return -2;
+	}
 	return 0;
 }
 
