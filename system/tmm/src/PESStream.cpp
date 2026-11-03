@@ -316,9 +316,15 @@ void PESStream::updateNextSend(int64_t stc) {
 					return;
 				} else {
 					if (lastDtsAvailable == -1) {
+						// first PES with a DTS (head of the list, after the
+						// previous one was disposed): give it the next slot and
+						// anchor its DTS to *that* send time. Anchoring before
+						// advancing paired this DTS with the previous PES's
+						// time, so the following PES got the same DTS and all
+						// later ones were one frame early.
+						nextSend += period;
 						lastDtsAvailable = periodList[0];
 						lastNextSendWithDts = nextSend;
-						nextSend += period;
 					} else {
 						if (lastRangeChange != rangeChangeList[0]) {
 							lastDtsAvailable = -1;
