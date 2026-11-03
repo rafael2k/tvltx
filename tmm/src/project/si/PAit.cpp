@@ -35,6 +35,7 @@ PAit::PAit() {
 	projectType = PT_AIT;
 	layer = 0x02; //HIERARCHY_B
 	carouselProj = NULL;
+	signaldescriptor = false;
 }
 
 PAit::~PAit() {
