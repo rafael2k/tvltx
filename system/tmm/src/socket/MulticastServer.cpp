@@ -26,12 +26,23 @@ MulticastServer::MulticastServer(const char* group, int portNumber) {
 	this->groupAddr = (char*) group;
 	this->portNumber = portNumber;
 
-	mAddr.sin_family = AF_INET;
-	mAddr.sin_addr.s_addr = inet_addr(this->groupAddr);
-	mAddr.sin_port = htons(this->portNumber);
-
 	loopedBack = 0;
 	ttl = 16;
+
+	// sin_family stays 0 (rejected by createSocket) unless the address is valid
+	mAddr = sockaddr_in();
+
+	if (portNumber < 1 || portNumber > 65535) {
+		cout << "MulticastServer::MulticastServer Invalid port number!" << endl;
+		return;
+	}
+	if (inet_pton(AF_INET, this->groupAddr, &mAddr.sin_addr) <= 0) {
+		cout << "MulticastServer::MulticastServer Invalid address format!" << endl;
+		return;
+	}
+
+	mAddr.sin_family = AF_INET;
+	mAddr.sin_port = htons(this->portNumber);
 }
 
 MulticastServer::~MulticastServer() {
@@ -47,6 +58,9 @@ void MulticastServer::setLoopedBack(unsigned char lb) {
 }
 
 bool MulticastServer::createSocket() {
+	if (mAddr.sin_family != AF_INET) {
+		return false;
+	}
 #ifdef WIN32
 	WORD L_Ver;
 	WSADATA wsaData;
