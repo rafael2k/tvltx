@@ -70,6 +70,8 @@ class TMM {
 		Project *project;
 		Muxer* muxer;
 		string destination;
+		// output given on the command line: mux to it instead of the physical card
+		bool destinationOverride;
 		map<ProjectInfo*, Stream*> siAndIsdbtStreamList;
 		unsigned int lastStcPrinter;
 

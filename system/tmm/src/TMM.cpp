@@ -56,6 +56,7 @@ void TMM::releaseSiStreamList() {
 }
 
 void TMM::init() {
+	destinationOverride = false;
 	muxer = NULL;
 	destination = "";
 	lastStcPrinter = 0;
@@ -691,7 +692,8 @@ int TMM::multiplexSetup() {
 
 	muxer->setDestination(destination);
 	muxer->setIsPipe(project->getIsPipe());
-	muxer->setDestType(project->getDestType());
+	muxer->setDestType(destinationOverride ? PROJECT_DESTTYPE_VIRTUAL :
+											 project->getDestType());
 	muxer->setExternalApp(project->getExternalApp());
 	muxer->setAppParams(project->getAppParams());
 	if (project->getPacketSize() != 204) muxer->setTsBitrate(project->getTsBitrate());
@@ -1507,13 +1509,21 @@ int TMM::sendTo(const char* destination) {
 		return -1;
 	}
 
-        start_encoders(project);
-        start_outputs(project);
-
-	loadMediasProject();
-
+	// A destination on the command line (file or udp://) replaces the
+	// project's output, including a physical (DekTec) one.
+	destinationOverride = (destination != NULL);
 	if (destination) this->destination.assign(destination); else
 		this->destination = project->getDestination();
+
+        start_encoders(project);
+	if (!destinationOverride && project->getDestType() == PROJECT_DESTTYPE_PHYSICAL) {
+		start_outputs(project);
+	} else if (destinationOverride && project->getDestType() == PROJECT_DESTTYPE_PHYSICAL) {
+		cout << "Physical output replaced by command line destination: "
+			 << this->destination << endl;
+	}
+
+	loadMediasProject();
 
 	ret = multiplex();
 	if (ret == -1) {
