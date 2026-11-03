@@ -28,10 +28,11 @@
  *   - audio: interleaved signed 16-bit little-endian PCM at 48 kHz, one
  *            buffer per audio stream, with the stream's channel count.
  *
- * Because the video device and the sound card normally run from different
- * (and free-running) clocks, both streams are slaved to CLOCK_MONOTONIC from
- * a common per-input epoch: video frames are duplicated/dropped and audio
- * samples are inserted/dropped so that each stream always delivers exactly
+ * The video device and the sound card normally run from different, free-
+ * running clocks, so both streams are slaved to the master clock (see sync.h:
+ * the modulator when one is transmitting, CLOCK_MONOTONIC otherwise) from a
+ * common per-input epoch: video frames are repeated/dropped and audio
+ * samples inserted/dropped so that each stream always delivers exactly
  * "elapsed time x nominal rate" units. This keeps A/V in sync and the encoder
  * at a constant frame/sample rate even with cheap capture hardware. When the
  * video source disappears, color bars are generated (same as DeckLink).
@@ -60,6 +61,7 @@
 #include "macros.h"
 #include "input.h"
 #include "buffer.h"
+#include "sync.h"
 
 extern service_config services[MAX_SERVICES];
 extern bool running;
@@ -68,11 +70,7 @@ extern int nr_services;
 #define V4L2_NR_BUFFERS       8
 #define NO_SIGNAL_TIMEOUT_NS  500000000LL   // 0.5 s without frames -> color bars
 
-#define AUDIO_RATE            48000
 #define AUDIO_PERIOD          1024          // frames per ALSA read
-#define AUDIO_SOFT_DRIFT      (AUDIO_RATE / 100)  // 10 ms: start 1-sample corrections
-#define AUDIO_HARD_DRIFT      (AUDIO_RATE / 25)   // 40 ms: insert silence / drop period
-#define MAX_CAPTURE_CHANNELS  16
 
 typedef struct
 {
@@ -92,13 +90,6 @@ typedef struct
 
 static v4l2_input_ctx contexts[MAX_INPUT_INTERFACES];
 
-static int64_t now_ns(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (int64_t) ts.tv_sec * 1000000000LL + ts.tv_nsec;
-}
-
 static int xioctl(int fd, unsigned long request, void *arg)
 {
     int r;
@@ -110,32 +101,20 @@ static int xioctl(int fd, unsigned long request, void *arg)
 
 static int mode_lookup(int video_input_mode, v4l2_mode *m)
 {
+    sync_mode sm;
     memset(m, 0, sizeof(*m));
-    switch (video_input_mode)
-    {
-    case VIDEO_MODE_1080_P_60:   *m = (v4l2_mode){1920, 1080, 60,    1,    false, 0}; break;
-    case VIDEO_MODE_1080_P_5994: *m = (v4l2_mode){1920, 1080, 60000, 1001, false, 0}; break;
-    case VIDEO_MODE_1080_P_50:   *m = (v4l2_mode){1920, 1080, 50,    1,    false, 0}; break;
-    case VIDEO_MODE_1080_I_5994: *m = (v4l2_mode){1920, 1080, 30000, 1001, true,  0}; break;
-    case VIDEO_MODE_1080_I_60:   *m = (v4l2_mode){1920, 1080, 30,    1,    true,  0}; break;
-    case VIDEO_MODE_1080_I_50:   *m = (v4l2_mode){1920, 1080, 25,    1,    true,  0}; break;
-    case VIDEO_MODE_1080_P_30:   *m = (v4l2_mode){1920, 1080, 30,    1,    false, 0}; break;
-    case VIDEO_MODE_1080_P_2997: *m = (v4l2_mode){1920, 1080, 30000, 1001, false, 0}; break;
-    case VIDEO_MODE_1080_P_25:   *m = (v4l2_mode){1920, 1080, 25,    1,    false, 0}; break;
-    case VIDEO_MODE_720_P_60:    *m = (v4l2_mode){1280, 720,  60,    1,    false, 0}; break;
-    case VIDEO_MODE_720_P_5994:  *m = (v4l2_mode){1280, 720,  60000, 1001, false, 0}; break;
-    case VIDEO_MODE_720_P_50:    *m = (v4l2_mode){1280, 720,  50,    1,    false, 0}; break;
-    case VIDEO_MODE_720_P_30:    *m = (v4l2_mode){1280, 720,  30,    1,    false, 0}; break;
-    case VIDEO_MODE_720_P_2997:  *m = (v4l2_mode){1280, 720,  30000, 1001, false, 0}; break;
-    case VIDEO_MODE_720_P_25:    *m = (v4l2_mode){1280, 720,  25,    1,    false, 0}; break;
-    // the encoder feeds x264 with 720x486 for 525-line modes (DeckLink size)
-    case VIDEO_MODE_480_I_5994:  *m = (v4l2_mode){720,  486,  30000, 1001, true,  V4L2_STD_525_60}; break;
-    case VIDEO_MODE_480_P_2997:  *m = (v4l2_mode){720,  486,  30000, 1001, false, V4L2_STD_525_60}; break;
-    case VIDEO_MODE_576_I_50:    *m = (v4l2_mode){720,  576,  25,    1,    true,  V4L2_STD_625_50}; break;
-    case VIDEO_MODE_576_P_25:    *m = (v4l2_mode){720,  576,  25,    1,    false, V4L2_STD_625_50}; break;
-    default:
+    if (sync_mode_lookup(video_input_mode, &sm))
         return -1;
-    }
+    m->width = sm.width;
+    m->height = sm.height;
+    m->fps_num = sm.fps_num;
+    m->fps_den = sm.fps_den;
+    m->interlaced = sm.interlaced;
+    // analog standard family for SD modes; digital (HDMI/SDI) sources have none
+    if (sm.height == 486)
+        m->std = V4L2_STD_525_60;
+    else if (sm.height == 576)
+        m->std = V4L2_STD_625_50;
     return 0;
 }
 
@@ -149,80 +128,6 @@ typedef struct
     size_t length;
 } mmap_buffer;
 
-typedef struct
-{
-    input_config *input;
-    int64_t epoch_ns;
-    int fps_num;
-    int fps_den;
-    int frame_size;
-    uint64_t frames_out;
-    uint64_t frames_dup;
-    uint64_t frames_drop;
-} video_cadence;
-
-static void video_write(video_cadence *vc, uint8_t *frame)
-{
-    for (int i = 0; i < nr_services; i++) {
-        if (services[i].input_id == vc->input->input_id)
-            write_buffer(&services[i].buf_video_in, frame, vc->frame_size);
-    }
-    vc->frames_out++;
-}
-
-// number of frames that should have been delivered at time t (frame 0 at epoch)
-static uint64_t video_expected(video_cadence *vc, int64_t t)
-{
-    if (t <= vc->epoch_ns)
-        return 1;
-    double elapsed = (double) (t - vc->epoch_ns) / 1e9;
-    return (uint64_t) (elapsed * vc->fps_num / vc->fps_den) + 1;
-}
-
-/* Deliver a captured frame keeping a constant cadence: +-1 frame of slack,
- * drop when the source runs fast, repeat the frame when it runs slow. */
-static void video_deliver(video_cadence *vc, uint8_t *frame, int64_t t)
-{
-    uint64_t expected = video_expected(vc, t);
-
-    if (vc->frames_out >= expected + 1) {
-        vc->frames_drop++;
-        return;
-    }
-
-    video_write(vc, frame);
-
-    while (running && vc->frames_out + 1 < expected) {
-        video_write(vc, frame);
-        vc->frames_dup++;
-    }
-}
-
-static void video_fill(video_cadence *vc, uint8_t *frame, int64_t t)
-{
-    uint64_t expected = video_expected(vc, t);
-    while (running && vc->frames_out < expected)
-        video_write(vc, frame);
-}
-
-static void fill_black(uint8_t *frame, int width, int height)
-{
-    uint32_t *p = (uint32_t *) frame;
-    for (int i = 0; i < width * height / 2; i++)
-        *p++ = 0x10801080; // U=0x80 Y=0x10 V=0x80 Y=0x10 (little endian)
-}
-
-static void fill_bars(uint8_t *frame, int width, int height)
-{
-    // same 75% bars as the DeckLink driver uses on "no input source"
-    static const uint32_t bars[8] = {
-        0xEA80EA80, 0xD292D210, 0xA910A9A5, 0x90229035,
-        0x6ADD6ACA, 0x51EF515A, 0x286D28EF, 0x10801080 };
-    uint32_t *p = (uint32_t *) frame;
-    for (int y = 0; y < height; y++)
-        for (int x = 0; x < width; x += 2)
-            *p++ = bars[(x * 8) / width];
-}
 
 typedef struct
 {
@@ -495,7 +400,7 @@ static void *v4l2_video_thread(void *arg)
     char dev[sizeof(input->video_device)];
     int fd = -1;
     bool streaming = false, no_signal = false;
-    video_cadence vc;
+    sync_video vc;
 
     memset(&g, 0, sizeof(g));
     memset(buffers, 0, sizeof(buffers));
@@ -513,19 +418,14 @@ static void *v4l2_video_thread(void *arg)
     g.dst_width = m.width;
     g.dst_height = m.height;
 
-    memset(&vc, 0, sizeof(vc));
-    vc.input = input;
-    vc.epoch_ns = ctx->epoch_ns;
-    vc.fps_num = m.fps_num;
-    vc.fps_den = m.fps_den;
-    vc.frame_size = m.width * m.height * 2;
+    sync_video_init(&vc, input, ctx->epoch_ns, m.fps_num, m.fps_den, m.width * m.height * 2);
 
     frame = malloc(vc.frame_size);
     bars = malloc(vc.frame_size);
     if (!frame || !bars)
         goto bail;
-    fill_black(frame, m.width, m.height);
-    fill_bars(bars, m.width, m.height);
+    sync_fill_black(frame, m.width, m.height);
+    sync_fill_bars(bars, m.width, m.height);
 
     fd = open(dev, O_RDWR | O_NONBLOCK);
     if (fd == -1) {
@@ -594,14 +494,13 @@ static void *v4l2_video_thread(void *arg)
     }
     streaming = true;
 
-    int64_t last_frame_ns = now_ns();
-    int64_t last_stats_ns = last_frame_ns;
+    int64_t last_frame_ns = sync_now_ns();
     int poll_ms = (int) (2000LL * m.fps_den / m.fps_num) + 1; // ~2 frame periods
 
     while (running) {
         struct pollfd pfd = { .fd = fd, .events = POLLIN };
         int r = poll(&pfd, 1, poll_ms);
-        int64_t t = now_ns();
+        int64_t t = sync_now_ns();
 
         if (r == -1 && errno != EINTR) {
             tvltx_info("V4L2: poll error: %s\n", strerror(errno));
@@ -625,7 +524,8 @@ static void *v4l2_video_thread(void *arg)
             int64_t ts = t;
             if ((buf.flags & V4L2_BUF_FLAG_TIMESTAMP_MASK) == V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC &&
                 (buf.timestamp.tv_sec || buf.timestamp.tv_usec))
-                ts = (int64_t) buf.timestamp.tv_sec * 1000000000LL + buf.timestamp.tv_usec * 1000LL;
+                ts = sync_from_monotonic_ns((int64_t) buf.timestamp.tv_sec * 1000000000LL +
+                                            buf.timestamp.tv_usec * 1000LL);
 
             bool good = !(buf.flags & V4L2_BUF_FLAG_ERROR) && buf.index < nr_buffers &&
                         buf.bytesused >= min_frame_bytes(&g);
@@ -645,23 +545,17 @@ static void *v4l2_video_thread(void *arg)
                 no_signal = false;
             }
             last_frame_ns = t;
-            video_deliver(&vc, frame, ts);
+            sync_video_deliver(&vc, frame, ts);
         }
         else if (t - last_frame_ns > NO_SIGNAL_TIMEOUT_NS) {
             if (!no_signal) {
                 tvltx_info("V4L2: input %d: no video signal, sending color bars\n", input->input_id);
                 no_signal = true;
             }
-            video_fill(&vc, bars, t);
+            sync_video_fill(&vc, bars, t);
         }
 
-        if (t - last_stats_ns > 60 * 1000000000LL) {
-            if (vc.frames_dup || vc.frames_drop)
-                tvltx_debug("V4L2: input %d: %llu frames out, %llu repeated, %llu dropped\n", input->input_id,
-                            (unsigned long long) vc.frames_out, (unsigned long long) vc.frames_dup,
-                            (unsigned long long) vc.frames_drop);
-            last_stats_ns = t;
-        }
+        sync_video_stats(&vc, "V4L2");
     }
     goto bail;
 
@@ -669,8 +563,7 @@ no_device:
     // keep the encoder fed so the rest of the multiplex stays on air
     tvltx_info("V4L2: input %d: running without a video device, sending color bars\n", input->input_id);
     while (running) {
-        int64_t t = now_ns();
-        video_fill(&vc, bars, t);
+        sync_video_fill(&vc, bars, sync_now_ns());
         struct timespec ts = { 0, 20000000 }; // 20 ms
         nanosleep(&ts, NULL);
     }
@@ -695,57 +588,6 @@ bail:
 /* Audio                                                                      */
 /* ------------------------------------------------------------------------ */
 
-/* Send captured audio to every audio stream fed by this input. Each stream
- * gets nr_channels[j] channels picked by its "mapping" bitmask (the input
- * channel indices, in ascending order); without a mapping it takes the first
- * channels. Missing channels are silent. */
-static void audio_write(input_config *input, const int16_t *pcm, int frames, int in_ch)
-{
-    for (int i = 0; i < nr_services; i++) {
-        if (services[i].input_id != input->input_id)
-            continue;
-
-        for (int j = 0; j < services[i].nr_audio_streams; j++) {
-            int nch = services[i].nr_channels[j];
-            int map[MAX_CAPTURE_CHANNELS];
-            int count = 0;
-            unsigned int mask = services[i].audio_mapping[j];
-
-            if (nch <= 0)
-                continue;
-            if (nch > MAX_CAPTURE_CHANNELS)
-                nch = MAX_CAPTURE_CHANNELS;
-
-            for (int c = 0; c < 32 && count < nch; c++)
-                if (mask & (1u << c))
-                    map[count++] = c;
-            if (count == 0)
-                for (; count < nch; count++)
-                    map[count] = count;
-            for (; count < nch; count++)
-                map[count] = -1;
-
-            int16_t out[frames * nch];
-            for (int f = 0; f < frames; f++)
-                for (int k = 0; k < nch; k++)
-                    out[f * nch + k] = (map[k] >= 0 && map[k] < in_ch) ? pcm[f * in_ch + map[k]] : 0;
-
-            write_buffer(&services[i].buf_audio_in[j], (uint8_t *) out, frames * nch * 2);
-        }
-    }
-}
-
-static void audio_silence(input_config *input, int64_t frames)
-{
-    int16_t zeros[AUDIO_PERIOD * MAX_CAPTURE_CHANNELS];
-    memset(zeros, 0, sizeof(zeros));
-    while (frames > 0 && running) {
-        int n = frames > AUDIO_PERIOD ? AUDIO_PERIOD : (int) frames;
-        audio_write(input, zeros, n, MAX_CAPTURE_CHANNELS);
-        frames -= n;
-    }
-}
-
 static snd_pcm_t *audio_open(const char *dev, int *channels)
 {
     snd_pcm_t *pcm = NULL;
@@ -757,11 +599,11 @@ static snd_pcm_t *audio_open(const char *dev, int *channels)
 
     int tries[3] = { *channels, 2, 1 };
     for (int i = 0; i < 3; i++) {
-        if (tries[i] <= 0 || tries[i] > MAX_CAPTURE_CHANNELS || (i > 0 && tries[i] >= *channels))
+        if (tries[i] <= 0 || tries[i] > SYNC_MAX_CHANNELS || (i > 0 && tries[i] >= *channels))
             continue;
         // soft resampling allowed, so "plughw:" / "default" devices can adapt
         err = snd_pcm_set_params(pcm, SND_PCM_FORMAT_S16_LE, SND_PCM_ACCESS_RW_INTERLEAVED,
-                                 tries[i], AUDIO_RATE, 1, 200000);
+                                 tries[i], SYNC_AUDIO_RATE, 1, 200000);
         if (err == 0) {
             if (tries[i] != *channels)
                 tvltx_info("ALSA: '%s' does not do %d channels, capturing %d\n", dev, *channels, tries[i]);
@@ -780,12 +622,10 @@ static void *alsa_audio_thread(void *arg)
     input_config *input = ctx->input;
     char dev[sizeof(input->audio_device)];
     int channels = input->audio_input_channel_nr > 0 ? input->audio_input_channel_nr : 2;
-    int64_t written = 0;  // frames delivered since the epoch
     snd_pcm_t *pcm = NULL;
-    uint64_t corr_up = 0, corr_down = 0;
-    double drift_avg = 0;  // smoothed drift, the delay report is coarse on some devices
-    bool aligned = false;  // hard-align to the timeline on start and after xruns
-    int64_t last_stats_ns = now_ns();
+    sync_audio sa;
+
+    sync_audio_init(&sa, input, ctx->epoch_ns);
 
     if (input->audio_device[0])
         snprintf(dev, sizeof(dev), "%s", input->audio_device);
@@ -800,17 +640,12 @@ static void *alsa_audio_thread(void *arg)
     if (!pcm)
         tvltx_info("ALSA: input %d: no audio device, sending silence\n", input->input_id);
 
-    // one spare frame so we can duplicate the last sample frame
-    int16_t pcm_buf[(AUDIO_PERIOD + 1) * MAX_CAPTURE_CHANNELS];
+    // one spare frame so the corrector can repeat the last sample frame
+    int16_t pcm_buf[(AUDIO_PERIOD + 1) * SYNC_MAX_CHANNELS];
 
     while (running) {
         if (!pcm) {
-            // silence paced by the monotonic clock
-            int64_t next = ctx->epoch_ns + (written + AUDIO_PERIOD) * 1000000000LL / AUDIO_RATE;
-            struct timespec ts = { next / 1000000000LL, next % 1000000000LL };
-            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &ts, NULL);
-            audio_silence(input, AUDIO_PERIOD);
-            written += AUDIO_PERIOD;
+            sync_audio_silence_period(&sa, AUDIO_PERIOD);
             continue;
         }
 
@@ -818,7 +653,7 @@ static void *alsa_audio_thread(void *arg)
         if (n < 0) {
             if (n == -EPIPE)
                 tvltx_debug("ALSA: input %d: overrun\n", input->input_id);
-            aligned = false;
+            sync_audio_resync(&sa);
             if (snd_pcm_recover(pcm, (int) n, 1) < 0) {
                 tvltx_info("ALSA: read error: %s\n", snd_strerror((int) n));
                 struct timespec ts = { 0, 100000000 };
@@ -829,62 +664,19 @@ static void *alsa_audio_thread(void *arg)
         if (n == 0)
             continue;
 
-        // where on the timeline is the last sample we just read?
+        // master time of the last sample read: now, minus what is still queued
         snd_pcm_sframes_t delay = 0;
         if (snd_pcm_delay(pcm, &delay) < 0 || delay < 0)
             delay = 0;
-        int64_t t = now_ns();
-        int64_t expected = (t - ctx->epoch_ns) * AUDIO_RATE / 1000000000LL - delay;
-        int64_t drift = written + n - expected; // > 0: ahead, < 0: behind
+        int64_t t = sync_now_ns() - (int64_t) delay * 1000000000LL / SYNC_AUDIO_RATE;
 
-        if (!aligned || drift < -AUDIO_HARD_DRIFT || drift > AUDIO_HARD_DRIFT) {
-            aligned = true;
-            drift_avg = 0;
-            if (drift < 0) {
-                // start-up or overrun: catch up with silence
-                audio_silence(input, -drift);
-                written += -drift;
-            } else if (drift >= n) {
-                // way ahead: drop this period
-                continue;
-            } else {
-                // ahead by less than a period: drop its first samples
-                memmove(pcm_buf, &pcm_buf[drift * channels], (n - drift) * channels * sizeof(int16_t));
-                n -= drift;
-            }
-        }
-        else {
-            // ~1.4 s time constant at 1024-frame periods
-            drift_avg += (drift - drift_avg) / 64.0;
-            if (drift_avg < -AUDIO_SOFT_DRIFT) {
-                // slow sound card clock: repeat the last sample frame
-                memcpy(&pcm_buf[n * channels], &pcm_buf[(n - 1) * channels], channels * sizeof(int16_t));
-                n++;
-                drift_avg += 1;
-                corr_up++;
-            }
-            else if (drift_avg > AUDIO_SOFT_DRIFT && n > 1) {
-                // fast sound card clock: drop the last sample frame
-                n--;
-                drift_avg -= 1;
-                corr_down++;
-            }
-        }
-
-        audio_write(input, pcm_buf, (int) n, channels);
-        written += n;
-
-        if (t - last_stats_ns > 60 * 1000000000LL) {
-            tvltx_debug("ALSA: input %d: drift %+.1f ms, %llu/%llu samples inserted/dropped\n",
-                        input->input_id, drift_avg * 1000.0 / AUDIO_RATE,
-                        (unsigned long long) corr_up, (unsigned long long) corr_down);
-            last_stats_ns = t;
-        }
+        sync_audio_deliver(&sa, pcm_buf, (int) n, channels, t);
+        sync_audio_stats(&sa, "ALSA");
     }
 
-    if (corr_up || corr_down)
+    if (sa.corr_up || sa.corr_down)
         tvltx_debug("ALSA: input %d: clock drift corrections: %llu samples inserted, %llu dropped\n",
-                    input->input_id, (unsigned long long) corr_up, (unsigned long long) corr_down);
+                    input->input_id, (unsigned long long) sa.corr_up, (unsigned long long) sa.corr_down);
     if (pcm)
         snd_pcm_close(pcm);
     tvltx_debug("Exiting ALSA audio input thread.\n");
@@ -903,7 +695,7 @@ int input_v4l2_start(input_config *input)
     v4l2_input_ctx *ctx = &contexts[input->input_id];
     ctx->input = input;
     // common time base for audio and video of this input
-    ctx->epoch_ns = now_ns();
+    ctx->epoch_ns = sync_now_ns();
 
     if (pthread_create(&tid, NULL, v4l2_video_thread, ctx))
         return EXIT_FAILURE;
