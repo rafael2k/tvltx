@@ -991,8 +991,30 @@ int XMLProject::parseAIT(XMLNode* m, XMLElement* f) {
 		for (o = f->FirstChild(); o; o = o->NextSibling()) {
 			g = o->ToElement();
 			if (strcmp(o->Value(), "carouselref") == 0) {
+				int application_profile = -1; // -1: attribute not given
 				unsigned int orgId, appId, appcode, rres;
 				string appname, lang, basedir, entrypoint;
+				value = LocalLibrary::getAttribute(g, "applicationprofile");
+				if (value.size()) {
+					if (value == "FSA_09" || value == "8001h" || value == "0001h") {
+						application_profile = 0x0001;
+					} else if (value == "FSB_09" || value == "8002h" || value == "0002h") {
+						application_profile = 0x0002;
+					} else if (value == "FSC_09" || value == "8003h") {
+						application_profile = 0x0003;
+					} else if (value == "FSD_09" || value == "8004h") {
+						application_profile = 0x0004;
+					} else {
+						cout << "ait: 'applicationprofile' not recognized ("
+							<< value << ")" << endl;
+						return -6;
+					}
+					// 8xxxh profiles are the interactive ones
+					if (value[0] == '8' ||
+						LocalLibrary::getAttribute(g, "applicationinteractive") == "true") {
+						application_profile |= 0x8000;
+					}
+				}
 				value = LocalLibrary::getAttribute(g, "carouselid");
 				num = getId(value);
 				if (num == -1) {
@@ -1106,7 +1128,8 @@ int XMLProject::parseAIT(XMLNode* m, XMLElement* f) {
 					ait->setCarouselProj(proj);
 					configAit(ait, ((PCarousel*)proj)->getServiceDomain(),
 							appname, lang, basedir,
-							entrypoint, orgId, appId, appcode, rres);
+							entrypoint, orgId, appId, appcode, rres,
+							application_profile);
 					(*projectList)[ait->getId()] = ait;
 				} else {
 					delete ait;

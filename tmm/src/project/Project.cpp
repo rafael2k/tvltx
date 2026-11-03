@@ -317,7 +317,8 @@ bool Project::createStreamEvents() {
 int Project::configAit(PAit* ait, unsigned int ctag, const string& aName,
 		const string& lang, const string& baseDir, const string& initClass,
 		unsigned int orgId, unsigned short appId, unsigned int appcode,
-		unsigned char recommendedResolution) {
+		unsigned char recommendedResolution,
+		int application_profile) {
 	vector<MpegDescriptor*>* dlist = new vector<MpegDescriptor*>;
 
 	TransportProtocol* tp = new TransportProtocol();
@@ -336,7 +337,12 @@ int Project::configAit(PAit* ait, unsigned int ctag, const string& aName,
 	Application* appDesc = new Application();
 	//appDesc->addAppProfile(0x8001, 0x01, 0x00, 0x00); //GLOBO
 	//appDesc->addAppProfile(0x00, 0x00, 0x00, 0x00); //SBT
-	appDesc->addAppProfile(0x00, 0x01, 0x00, 0x00);
+	if (application_profile >= 0) {
+		appDesc->addAppProfile(application_profile, 0x01, 0x08, 0x08);
+	} else {
+		// no "applicationprofile" given: keep the profile TVLTx always sent
+		appDesc->addAppProfile(0x00, 0x01, 0x00, 0x00);
+	}
 	appDesc->setServiceBoundFlag(true);
 	appDesc->setVisibility(0x03);
 	appDesc->setApplicationPriority(0x01);
