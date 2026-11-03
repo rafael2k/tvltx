@@ -4,9 +4,10 @@ project(tvltx C CXX)
 
 # Input drivers:
 #  - V4L2 + ALSA (generic Linux capture devices): needs libasound
-#  - Blackmagic DeckLink: needs the proprietary libDeckLinkAPI (Desktop Video)
+#  - Blackmagic DeckLink: SDK 12.2 headers are bundled; libDeckLinkAPI (Desktop Video)
+#    is loaded at run time, so it is only needed on the capture machine
 option(WITH_V4L2 "Build the Video4Linux2 + ALSA input driver" ON)
-option(WITH_DECKLINK "Build the Blackmagic DeckLink input driver (if libDeckLinkAPI is found)" ON)
+option(WITH_DECKLINK "Build the Blackmagic DeckLink input driver" ON)
 
 file(GLOB_RECURSE PROJ_SOURCES
      tmm/src/*.cpp libmpeg2/src/*.cpp encoder/*.c encoder/*.cpp
@@ -45,15 +46,11 @@ if (NOT HAVE_V4L2_INPUT)
 endif()
 
 if (WITH_DECKLINK)
-    find_library(DECKLINK_LIBRARY DeckLinkAPI)
-endif()
-if (DECKLINK_LIBRARY)
     list(APPEND PROJ_DEFINES HAS_BLACKMAGIC__)
-    list(APPEND PROJ_LIBRARIES ${DECKLINK_LIBRARY})
-    message(STATUS "Blackmagic DeckLink input: enabled (${DECKLINK_LIBRARY})")
+    message(STATUS "Blackmagic DeckLink input: enabled (SDK 12.2, libDeckLinkAPI loaded at run time)")
 else()
     list(FILTER PROJ_SOURCES EXCLUDE REGEX "encoder/bmd/")
-    message(STATUS "Blackmagic DeckLink input: disabled (libDeckLinkAPI not found)")
+    message(STATUS "Blackmagic DeckLink input: disabled")
 endif()
 
 add_executable(tvltx ${PROJ_SOURCES})
