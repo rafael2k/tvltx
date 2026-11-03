@@ -1,8 +1,8 @@
 CPP = g++
 CC = gcc
 
-CPPFLAGS = -Wno-write-strings -Wno-multichar -fno-rtti -fexceptions -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -O2 -g
-CFLAGS = -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -O2 -g
+CPPFLAGS = -Wno-write-strings -Wno-multichar -fno-rtti -fexceptions -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -O2 -g -fcommon
+CFLAGS = -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -O2 -g -fcommon
 LDFLAGS = -ldl -lm -lrt -lpthread 
 
 
