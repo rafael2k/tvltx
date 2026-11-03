@@ -18,8 +18,9 @@ if (NOT FDKAAC_INCLUDE_DIR OR NOT FDKAAC_LIBRARY)
     message(FATAL_ERROR "fdk-aac not found (Debian/Ubuntu: apt install libfdk-aac-dev)")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wno-multichar -fno-rtti -std=c++11")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -std=gnu99")
+# falling off the end of a non-void function traps (ud2/SIGILL) with modern GCC
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wno-multichar -fno-rtti -std=c++11 -Werror=return-type")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -std=gnu99 -Werror=return-type")
 
 set(PROJ_DEFINES "")
 set(HAVE_V4L2_INPUT OFF)

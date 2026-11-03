@@ -62,18 +62,18 @@ bool LocalLibrary::executeApp(const string& filename, string parameters,
 	    return false;
 	}
 #else
-	pid_t mpid;
-	mpid = fork();
-	if(fork == 0) {
-		char* argv[5];
-		argv[0] = NULL;
-		execvp(filename.c_str(), argv);
-		*pid = (unsigned int) mpid;
-		return true;
+	// same command line as on Windows: "filename parameters", via the shell
+	string cmd = filename + ' ' + parameters;
+	pid_t mpid = fork();
+	if (mpid == 0) {
+		execl("/bin/sh", "sh", "-c", cmd.c_str(), (char *) NULL);
+		_exit(127);
 	}
-	else {
+	if (mpid < 0) {
 		return false;
 	}
+	*pid = (unsigned int) mpid;
+	return true;
 #endif
 }
 
@@ -88,7 +88,7 @@ bool LocalLibrary::killApp(unsigned int pid) {
 	CloseHandle(hProcess);
 	return result;
 #else
-	kill(pid, SIGTERM);
+	return kill((pid_t) pid, SIGTERM) == 0;
 #endif
 }
 

@@ -1903,56 +1903,17 @@ void *output_asi_thread_dektec(void *output_par)
     //    fprintf(stderr, "Frequency = %s MHz\n", mod_pars.freq);
     //    fprintf(stderr, "Power = %s dbm\n", mod_pars.power);
 
-    static int argc;
-    static char **argv;
-
-    argc = 14;
-
-    argv = (char **) malloc (13 * 8);
-	    
-    argv[0] = (char *) malloc (7);
-    memcpy (argv[0], "DtPlay", 7);
-	    
-    argv[1] = (char *) malloc (5);
-    memcpy (argv[1], "null", 5);
-	    
-    argv[2] = (char *) malloc (3);
-    memcpy (argv[2], "-r", 3);
-	    
-    argv[3] = (char *) malloc (9);
-    memcpy (argv[3], "29958294", 9);
-	    
-    argv[4] = (char *) malloc (3);
-    memcpy (argv[4], "-l", 3);
-	    
-    argv[5] = (char *) malloc (2);
-    memcpy (argv[5], "0", 2);
-	    
-    argv[6] = (char *) malloc (3);
-    memcpy (argv[6], "-t", 3);
-    
-    argv[7] = (char *) malloc (4);
-    memcpy (argv[7], "115", 4);
-
-    argv[8] = (char *) malloc (3);
-    memcpy (argv[8], "-n", 3);
-    
-    argv[9] = (char *) malloc (2);
-    memcpy (argv[9], "1", 2);
-    
-    argv[10] = (char *) malloc (3);
-    memcpy (argv[10], "-i", 3);
-    
-    argv[11] = (char *) malloc (2);
-    memcpy (argv[11], "1", 2);
-    
-    argv[12] = (char *) malloc (3);
-    memcpy (argv[10], "-m", 3);
-    
-    argv[13] = (char *) malloc (4);
-    memcpy (argv[11], "204", 4);
-
-    argv[14] = NULL;
+    // DtPlay command line for ASI output (TS rate 29958294 bps, 204-byte packets)
+    char *argv[] = {
+        (char *) "DtPlay", (char *) "null",
+        (char *) "-r", (char *) "29958294",
+        (char *) "-l", (char *) "0",
+        (char *) "-t", (char *) "115",
+        (char *) "-n", (char *) "1",
+        (char *) "-i", (char *) "1",
+        (char *) "-m", (char *) "204",
+        NULL };
+    int argc = sizeof(argv) / sizeof(argv[0]) - 1;
 
     try
     {
@@ -1960,10 +1921,12 @@ void *output_asi_thread_dektec(void *output_par)
     }
     catch(...)
     {
-	RetValue = -1;
+        RetValue = -1;
     }
 
-
+    if (RetValue != 0)
+        fprintf(stderr, "DekTec ASI output stopped (DtPlay returned %d)\n", RetValue);
+    return NULL;
 }
 
 
@@ -1976,57 +1939,17 @@ void *output_mod_thread_dektec(void *output_par)
     //    fprintf(stderr, "Frequency = %s MHz\n", mod_pars.freq);
     //    fprintf(stderr, "Power = %s dbm\n", mod_pars.power);
 
-    static int argc;
-    static char **argv;
-
-    
-    argc = 14;
-
-    argv = (char **) malloc (13 * 8);
-	    
-    argv[0] = (char *) malloc (7);
-    memcpy (argv[0], "DtPlay", 7);
-	    
-    argv[1] = (char *) malloc (5);
-    memcpy (argv[1], "null", 5);
-	    
-    argv[2] = (char *) malloc (4);
-    memcpy (argv[2], "-mt", 4);
-	    
-    argv[3] = (char *) malloc (6);
-    memcpy (argv[3], "ISDBT", 6);
-	    
-    argv[4] = (char *) malloc (4);
-    memcpy (argv[4], "-mf", 4);
-	    
-    argv[5] = (char *) malloc (11);
-    memcpy (argv[5], mod_pars->freq, 11);
-	    
-    argv[6] = (char *) malloc (4);
-    memcpy (argv[6], "-ml", 4);
-    
-    argv[7] = (char *) malloc (4);
-    memcpy (argv[7], mod_pars->power, 4);
-
-    argv[8] = (char *) malloc (3);
-    memcpy (argv[8], "-n", 3);
-    
-    argv[9] = (char *) malloc (2);
-    memcpy (argv[9], "1", 2);
-    
-    argv[10] = (char *) malloc (3);
-    memcpy (argv[10], "-l", 3);
-    
-    argv[11] = (char *) malloc (2);
-    memcpy (argv[11], "0", 2);
-    
-    argv[12] = (char *) malloc (3);
-    memcpy (argv[10], "-t", 3);
-    
-    argv[13] = (char *) malloc (4);
-    memcpy (argv[11], "115", 4);
-
-    argv[14] = NULL;
+    // DtPlay command line for the ISDB-T modulator
+    char *argv[] = {
+        (char *) "DtPlay", (char *) "null",
+        (char *) "-mt", (char *) "ISDBT",
+        (char *) "-mf", mod_pars->freq,
+        (char *) "-ml", mod_pars->power,
+        (char *) "-n", (char *) "1",
+        (char *) "-l", (char *) "0",
+        (char *) "-t", (char *) "115",
+        NULL };
+    int argc = sizeof(argv) / sizeof(argv[0]) - 1;
 
     try
     {
@@ -2034,7 +1957,10 @@ void *output_mod_thread_dektec(void *output_par)
     }
     catch(...)
     {
-	RetValue = -1;
+        RetValue = -1;
     }
 
+    if (RetValue != 0)
+        fprintf(stderr, "DekTec modulator output stopped (DtPlay returned %d)\n", RetValue);
+    return NULL;
 }
