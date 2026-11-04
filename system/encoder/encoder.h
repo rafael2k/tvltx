@@ -30,22 +30,14 @@ extern "C" {
 
 // video macros
 #define TRANSFER_SIZE 518400
-#define X264_HEADER_SIZE 32
 
-#define MAX_H264_F_SIZE 1048576 // 2^20 is should be enough for very high bitrates...
+#define MAX_H264_F_SIZE 1048576 // largest H.264 access unit accepted from x264 (2^20)
 
 int encoder_start(service_config *service);
 void *encoder_video_thread(void *service_v);
 void *encoder_audio_thread(void *service_v);
 void *encoder_video_helper_thread(void *helper_h);
 
-typedef struct {
-    double dts;
-    double pts;
-    int real_bitrate;
-    int payload_size;
-    int is_keyframe;
-} x264_header;
 
 #ifdef __cplusplus
 };

@@ -22,6 +22,7 @@
 #include "pes.h"
 #include "encoder.h"
 #include "hexdump.h"
+#include "h264_hrd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +33,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <poll.h>
+#include <errno.h>
 #include <unistd.h>
 
 #include <aacenc_lib.h>
@@ -649,6 +651,56 @@ void *encoder_audio_thread(void *service_a)
     return EXIT_SUCCESS;
 }
 
+/* One access unit from x264: put it in a PES with its HRD decode (DTS) and
+ * presentation (PTS) times, which x264 --nal-hrd signals in the stream. */
+typedef struct {
+    service_config *service;
+    uint64_t untimed;
+} video_out_ctx;
+
+static void video_au_out(void *user, const uint8_t *au, size_t len, int timing_ok,
+                         double cpb_removal_time, double dpb_output_time, bool keyframe)
+{
+    video_out_ctx *ctx = user;
+    service_config *service = ctx->service;
+    uint64_t dts, pts;
+    int payload_size = (int) len;
+    // TODO: implement Priority Flag in PES header writer (keyframe)
+    (void) keyframe;
+
+    if (!timing_ok) {
+        if (ctx->untimed++ == 0)
+            tvltx_info("x264 output has no HRD timing (needs --nal-hrd): dropping access units\n");
+        return;
+    }
+
+    // stream time starts 1 s (the CPB delay of the first access unit) earlier
+    dts = (uint64_t) ((((long double) cpb_removal_time - 1) * ((long double) 90000.0)) + (long double) 0.5) & PTS_MASK; // +0.5 for better rounding
+    pts = (uint64_t) ((((long double) dpb_output_time - 1) * ((long double) 90000.0)) + (long double) 0.5) & PTS_MASK; // +0.5 for better rounding
+
+    uint8_t pes_header_f[32];
+    uint8_t *pes_header = pes_header_f + sizeof(int); // to accomodate buffer_transfer_size before the actual PES header
+    int pes_header_size;
+
+    if (service->is_oneseg == false)
+        pes_get_header(pes_header, &pes_header_size, payload_size,
+                       0 /* with size*/, 1 /* with dts */, dts, pts, PES_STREAM_ID_VIDEO_MPEG);
+    else // is_oneseg == true
+        pes_get_header(pes_header, &pes_header_size, payload_size,
+                       0 /* with size*/, 0 /* without dts */, dts, pts, PES_STREAM_ID_VIDEO_MPEG);
+
+    int pes_size = pes_header_size + payload_size;
+    memcpy(pes_header_f, &pes_size, sizeof(int));
+
+    // write header with size and pes header
+    write_buffer(&service->buf_video_out, pes_header_f, pes_header_size + sizeof(int));
+
+    // write H.264 payload
+    write_buffer(&service->buf_video_out, (uint8_t *) au, payload_size);
+}
+
+/* Reads x264's plain Annex B output (stock x264, run with --aud --nal-hrd),
+ * splits it into access units and times them from the stream (h264_hrd). */
 void *encoder_video_helper_thread(void *helper_h)
 {
     typedef struct {
@@ -656,61 +708,30 @@ void *encoder_video_helper_thread(void *helper_h)
         FILE *fifo;
     } helper_par;
     helper_par *helper = helper_h;
-    service_config *service = helper->service;
-    x264_header header;
-    uint64_t dts, pts;
-    int payload_size;
-    // TODO: implement Priority Flag in PES header writer
-    // int is_keyframe;
-    uint8_t buffer[MAX_H264_F_SIZE];
+    video_out_ctx ctx = { helper->service, 0 };
+    h264_au_reader reader;
+    uint8_t chunk[65536];
+    int fd = fileno(helper->fifo);
 
-    while (running) {
-        int out = fread(&header, sizeof(x264_header), 1, helper->fifo);
-        if (out != 1){
-            tvltx_debug("Read from x264 fifo failed\n");
-            return (void *) EXIT_FAILURE;
-        }
-        payload_size = header.payload_size;
-        // tvltx_debug("payload size = %d\n", payload_size);
-        // is_keyframe = header.is_keyframe;
-        dts = (uint64_t) ((((long double) header.dts - 1) * ((long double) 90000.0)) + (long double) 0.5) & PTS_MASK; // +0.5 for better rounding
-        pts = (uint64_t) ((((long double) header.pts - 1) * ((long double) 90000.0)) + (long double) 0.5) & PTS_MASK; // +0.5 for better rounding
-
-        if (payload_size > MAX_H264_F_SIZE){
-            tvltx_debug("H.264 frame size is bigger than buffer size! Increase-me!\n");
-            return (void *) EXIT_FAILURE;
-        }
-
-        // tvltx_debug("video thread read payload_size %d\n", payload_size);
-        out = fread(buffer, 1, payload_size, helper->fifo);
-        if (out != payload_size){
-            tvltx_debug("Read from x264 fifo failed out = %d payload = %d\n", out, payload_size);
-            return (void *) EXIT_FAILURE;
-        }
-
-        // hexdump(buffer, payload_size, "after x264 fread\n");
-        uint8_t pes_header_f[32];
-        uint8_t *pes_header = pes_header_f + sizeof(int); // to accomodate buffer_transfer_size before the actual PES header
-        int pes_header_size;
-
-
-        if (service->is_oneseg == false)
-            pes_get_header(pes_header, &pes_header_size, payload_size,
-                           0 /* with size*/, 1 /* with dts */, dts, pts, PES_STREAM_ID_VIDEO_MPEG);
-        else // is_oneseg == true
-            pes_get_header(pes_header, &pes_header_size, payload_size,
-                           0 /* with size*/, 0 /* without dts */, dts, pts, PES_STREAM_ID_VIDEO_MPEG);
-
-        int pes_size = pes_header_size + payload_size;
-        memcpy(pes_header_f, &pes_size, sizeof(int));
-
-        // write header with size and pes header
-        write_buffer(&service->buf_video_out, pes_header_f, pes_header_size + sizeof(int));
-
-        // tvltx_debug("before write in  h.264 encoder to output buffer\n");
-        // write H.264 payload
-        write_buffer(&service->buf_video_out, buffer, payload_size);
+    if (h264_au_reader_init(&reader, MAX_H264_F_SIZE)) {
+        tvltx_info("H.264 reader: out of memory\n");
+        return (void *) EXIT_FAILURE;
     }
 
+    while (running) {
+        ssize_t n = read(fd, chunk, sizeof(chunk));
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n <= 0) {
+            tvltx_debug("x264 output ended\n");
+            break;
+        }
+        if (h264_au_reader_push(&reader, chunk, (size_t) n, video_au_out, &ctx)) {
+            tvltx_info("H.264 access unit bigger than %d bytes! Increase MAX_H264_F_SIZE\n", MAX_H264_F_SIZE);
+            break;
+        }
+    }
+
+    h264_au_reader_free(&reader);
     return EXIT_SUCCESS;
 }
