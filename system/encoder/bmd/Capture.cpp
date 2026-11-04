@@ -17,7 +17,7 @@
 */
 
 /*
- * Blackmagic DeckLink input, DeckLink SDK 12.x API.
+ * Blackmagic DeckLink input, DeckLink SDK 16.0 API.
  *
  * libDeckLinkAPI.so (Blackmagic Desktop Video) is loaded at run time through
  * DeckLinkAPIDispatch.cpp, so TVLTx builds without the SDK library; without
@@ -323,7 +323,6 @@ void DeckLinkInput::deliver_video(IDeckLinkVideoInputFrame *video, int64_t t)
     last_video_ns = t;
 
     bool usable = !(video->GetFlags() & bmdFrameHasNoInputSource) && !mode_mismatch;
-    void *bytes = NULL;
     long w = video->GetWidth(), h = video->GetHeight(), stride = video->GetRowBytes();
 
     if (usable && (w != mode.width || h != mode.height)) {
@@ -332,8 +331,34 @@ void DeckLinkInput::deliver_video(IDeckLinkVideoInputFrame *video, int64_t t)
                        input->input_id, w, h, mode.width, mode.height);
         usable = false;
     }
-    if (usable && video->GetBytes(&bytes) != S_OK)
+
+    /* SDK 14.3+: frame bytes are reached through IDeckLinkVideoBuffer, and
+     * only between StartAccess() and EndAccess(). Copy into our own frame and
+     * release the card's buffer before delivering (which may block). */
+    if (usable) {
+        IDeckLinkVideoBuffer *vbuf = NULL;
+        void *bytes = NULL;
         usable = false;
+        if (video->QueryInterface(IID_IDeckLinkVideoBuffer, (void **) &vbuf) == S_OK && vbuf) {
+            if (vbuf->StartAccess(bmdBufferAccessRead) == S_OK) {
+                if (vbuf->GetBytes(&bytes) == S_OK && bytes) {
+                    if (video->GetPixelFormat() == bmdFormat8BitBGRA) {
+                        bgra_to_uyvy((const uint8_t *) bytes, stride, frame, mode.width, mode.height,
+                                     mode.height >= 720);
+                    } else if (stride == (long) mode.width * 2) {
+                        memcpy(frame, bytes, (size_t) mode.width * mode.height * 2);
+                    } else {
+                        for (int y = 0; y < mode.height; y++)
+                            memcpy(frame + (size_t) y * mode.width * 2,
+                                   (const uint8_t *) bytes + (size_t) y * stride, (size_t) mode.width * 2);
+                    }
+                    usable = true;
+                }
+                vbuf->EndAccess(bmdBufferAccessRead);
+            }
+            vbuf->Release();
+        }
+    }
 
     if (!usable) {
         if (!no_signal)
@@ -345,16 +370,6 @@ void DeckLinkInput::deliver_video(IDeckLinkVideoInputFrame *video, int64_t t)
     if (no_signal) {
         tvltx_info("DeckLink: input %d: input signal back\n", input->input_id);
         no_signal = false;
-    }
-
-    if (video->GetPixelFormat() == bmdFormat8BitBGRA) {
-        bgra_to_uyvy((const uint8_t *) bytes, stride, frame, mode.width, mode.height, mode.height >= 720);
-    } else if (stride == (long) mode.width * 2) {
-        memcpy(frame, bytes, (size_t) mode.width * mode.height * 2);
-    } else {
-        for (int y = 0; y < mode.height; y++)
-            memcpy(frame + (size_t) y * mode.width * 2, (const uint8_t *) bytes + (size_t) y * stride,
-                   (size_t) mode.width * 2);
     }
     sync_video_deliver(&sv, frame, t);
 }
