@@ -338,7 +338,10 @@ int Project::configAit(PAit* ait, unsigned int ctag, const string& aName,
 	//appDesc->addAppProfile(0x8001, 0x01, 0x00, 0x00); //GLOBO
 	//appDesc->addAppProfile(0x00, 0x00, 0x00, 0x00); //SBT
 	if (application_profile >= 0) {
-		appDesc->addAppProfile(application_profile, 0x01, 0x08, 0x08);
+		// Version = minimum terminal version needed to start the app (ABNT NBR
+		// 15606-3, application_descriptor); no norm assigns values, so use the
+		// most permissive 1.0.0, as without an explicit profile.
+		appDesc->addAppProfile(application_profile, 0x01, 0x00, 0x00);
 	} else {
 		// no "applicationprofile" given: keep the profile TVLTx always sent
 		appDesc->addAppProfile(0x00, 0x01, 0x00, 0x00);

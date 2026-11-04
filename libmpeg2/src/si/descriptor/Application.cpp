@@ -54,10 +54,13 @@ int Application::process() {
 	applicationProfilesLength = stream[pos++] & 0xFF;
 
 	while (cdlength < applicationProfilesLength) {
+		// application_profile(16), version.major, version.minor, version.micro
 		AppProfile *appProfile = new AppProfile();
 		appProfile->applicationProfile = (((stream[pos] & 0xFF) << 8) |
 										   (stream[pos+1] & 0xFF));
+		pos += 2;
 		appProfile->versionMajor = stream[pos++] & 0xFF;
+		appProfile->versionMinor = stream[pos++] & 0xFF;
 		appProfile->versionMicro = stream[pos++] & 0xFF;
 		appProfileList.push_back(appProfile);
 		cdlength += 5;
@@ -173,7 +176,8 @@ void Application::addAppProfile(unsigned short applicationProfile,
 	AppProfile *appProfile = new AppProfile();
 	appProfile->applicationProfile = applicationProfile;
 	appProfile->versionMajor = versionMajor;
-	appProfile->versionMicro = versionMinor;
+	appProfile->versionMinor = versionMinor;
+	appProfile->versionMicro = versionMicro;
 	appProfileList.push_back(appProfile);
 }
 
