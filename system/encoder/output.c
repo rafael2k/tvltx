@@ -35,10 +35,37 @@
 
 extern bool running;
 
+/* Mark a PES shared-memory segment empty (control = 1, size = 0), creating
+ * it if needed. POSIX shared memory outlives the process, so a segment can
+ * still hold an unread PES from the previous run; the muxer must never see
+ * it, or it anchors its timing on a stale DTS. */
+static void pes_shm_reset(const char *name)
+{
+    int fd = shm_open(name, O_RDWR | O_CREAT, 0666);
+    if (fd == -1) {
+        tvltx_debug("PES shared memory %s: creation failed\n", name);
+        return;
+    }
+    if (ftruncate(fd, PES_SHM_MEMORY_SIZE) == 0) {
+        uint8_t *m = (uint8_t *) mmap(0, PES_SHM_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+        if (m != MAP_FAILED) {
+            memset(m + 1, 0, 4);   // size = 0
+            m[0] = 1;              // control = 1: owned by the writer, nothing to read
+            munmap(m, PES_SHM_MEMORY_SIZE);
+        }
+    }
+    close(fd);
+}
+
 int output_start(service_config *service)
 {
     pthread_t          tid_v;
     pthread_t          tid_a;
+
+    // reset before the muxer opens the segments (start_encoders() runs first)
+    pes_shm_reset(service->video_shm_name);
+    for (int i = 0; i < service->nr_audio_streams; i++)
+        pes_shm_reset(service->audio_shm_name[i]);
 
     pthread_create(&tid_v, NULL, output_video_thread, (void *)service);
     pthread_create(&tid_a, NULL, output_audio_thread, (void *)service);
