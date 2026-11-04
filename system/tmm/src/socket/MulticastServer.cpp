@@ -104,7 +104,10 @@ bool MulticastServer::tryToBind() {
 	struct sockaddr_in stSourceAddr;
 
 	stSourceAddr.sin_family = AF_INET;
-	stSourceAddr.sin_port = htons(this->portNumber);
+	// Any source port: binding the destination port here made the sender
+	// hold it, so nothing on the same host (e.g. a monitoring VLC) could
+	// receive the stream, and unicast to localhost looped back into tvltx.
+	stSourceAddr.sin_port = htons(0);
 	stSourceAddr.sin_addr.s_addr = INADDR_ANY;
 
 	/*
