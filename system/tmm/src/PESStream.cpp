@@ -25,6 +25,9 @@
 
 #include "PESStream.h"
 
+/* set to false by the SIGINT/SIGTERM handler (encoder_control.cpp) */
+extern bool running;
+
 namespace br {
 namespace pucrio {
 namespace telemidia {
@@ -175,7 +178,7 @@ void PESStream::fillBuffer(bool fillAll) {
 	int len, ret;
 	char lcc, pesPacketCount = 0;
 
-	while (bufferList.size() < maxBufferLength) {
+	while (bufferList.size() < maxBufferLength && running) {
 		if (readSrcAs == 0) {
 			//read source as TS packets
 			switch (srcType) {

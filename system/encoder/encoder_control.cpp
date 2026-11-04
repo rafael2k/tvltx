@@ -162,10 +162,21 @@ int start_encoders(Project *project)
 
     tvltx_info("Inputs: %d\nServices: %d\n", nr_inputs, nr_services);
 
-    // signal handlers
-    signal(SIGINT, sigfunc);
-    signal(SIGTERM, sigfunc);
-    signal(SIGHUP, sigfunc);
+    // run worker threads (set before the handlers, so an early Ctrl+C sticks)
+    running = true;
+
+    // signal handlers. SIGPIPE keeps its default: a dead x264 then stops the
+    // whole transmitter (for its supervisor to restart) instead of leaving it
+    // on air without video, and x264 children (which inherit an ignored
+    // SIGPIPE across exec) still exit once tvltx is gone.
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = sigfunc;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGHUP, &sa, NULL);
 
     // do the verifications for error cheking... TODO
 
@@ -178,9 +189,6 @@ int start_encoders(Project *project)
             initialize_buffer(&services[i].buf_audio_out[j], 26);
         }
     }
-
-    // run worker threads
-    running = true;
 
     // start inputs
     for (int i = 0; i < nr_inputs; i++){
@@ -197,16 +205,21 @@ int start_encoders(Project *project)
 
 }
 
+/* Only async-signal-safe work here: flag every thread to stop (they all
+ * poll `running`) and let main() shut down in order. A second SIGINT or
+ * SIGTERM exits immediately. */
+static volatile sig_atomic_t stop_requests = 0;
+
 static void sigfunc(int signum)
 {
-    if (signum == SIGINT || signum == SIGTERM){
-        running = false;
-        tvltx_info("Exiting...\n");
-        sleep(2);
-        exit(EXIT_SUCCESS);
+    if (signum == SIGINT || signum == SIGTERM) {
+        if (stop_requests++ == 0) {
+            static const char msg[] = "\nStopping... (press Ctrl+C again to exit at once)\n";
+            running = false;
+            if (write(STDERR_FILENO, msg, sizeof(msg) - 1) < 0) { /* nothing to do */ }
+        } else {
+            _exit(EXIT_FAILURE);
+        }
     }
-    if (signum == SIGHUP){
-        tvltx_info("SIGHUP received.\n");
-        // reload configurations...
-    }
+    /* SIGHUP: reserved for configuration reload, ignored for now */
 }

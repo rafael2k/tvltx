@@ -26,6 +26,8 @@
 #include "util/functions.h"
 #include "project/XMLProject.h"
 #include "TMM.h"
+#include <unistd.h>
+#include <cstdio>
 #include "tsparser/TSInfo.h"
 #include <string>
 
@@ -103,8 +105,10 @@ int main(int argc, char *argv[]) {
 	XMLProject *project = new XMLProject(project_file);
 	tmm = new TMM(project);
 	tmm->sendTo(ts_output);
-	delete tmm;
-	delete project;
-
-	return 0;
+	delete tmm;		// closes (and flushes) the TS output
+	fflush(stdout);
+	// Leave without exit handlers: worker threads may still hold stdio locks
+	// (x264 pipes), and exit()'s global flush would wait for them forever.
+	// The x264 children see EOF/SIGPIPE on their FIFOs and exit too.
+	_exit(0);
 }

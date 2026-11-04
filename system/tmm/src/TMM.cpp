@@ -27,6 +27,9 @@
 #include "encoder_control.h"
 #include "output_control.h"
 
+/* set to false by the SIGINT/SIGTERM handler (encoder_control.cpp) */
+extern bool running;
+
 namespace br {
 namespace pucrio {
 namespace telemidia {
@@ -752,7 +755,7 @@ int TMM::multiplex() {
 
 	if (multiplexSetup() < 0) return -1;
 
-	while (!ret) { //muxer starts here
+	while (!ret && running) { //muxer starts here; ends on SIGINT/SIGTERM
 		proj = Project::getFirstProjectReversed(project->getProjectList(), PT_TIMELINE);
 		if (proj) {
 			newTimeline = ((Timeline*)proj)->currTimeline(muxer->getRelativeStc(), &condRet);
