@@ -33,11 +33,11 @@ BM_CFLAGS=-DHAS_BLACKMAGIC__
 
 all: encoder
 
-encoder_no_bm: main.o hexdump.o buffer.o pes.o input_no_bm.o encoder.o output.o ring_buffer.o
-	$(CC) $(LDFLAGS) main.o hexdump.o buffer.o pes.o input_no_bm.o encoder.o output.o ring_buffer.o -o encoder_no_bm
+encoder_no_bm: main.o hexdump.o buffer.o pes.o input_no_bm.o encoder.o output.o ring_buffer.o h264_hrd.o
+	$(CC) main.o hexdump.o buffer.o pes.o input_no_bm.o encoder.o output.o ring_buffer.o h264_hrd.o -o encoder_no_bm $(LDFLAGS)
 
-encoder: main.o hexdump.o buffer.o pes.o input.o encoder.o output.o ring_buffer.o bmd/Capture.o
-	$(CPP) $(LDFLAGS) $(BM_LDFLAGS) main.o hexdump.o buffer.o pes.o input.o encoder.o output.o ring_buffer.o bmd/Capture.o -o encoder
+encoder: main.o hexdump.o buffer.o pes.o input.o encoder.o output.o ring_buffer.o h264_hrd.o bmd/Capture.o
+	$(CPP) main.o hexdump.o buffer.o pes.o input.o encoder.o output.o ring_buffer.o h264_hrd.o bmd/Capture.o -o encoder $(LDFLAGS) $(BM_LDFLAGS)
 
 main.o: main.c encoder_opts.h macros.h
 	$(CC) $(CFLAGS) main.c -c -o main.o
@@ -57,7 +57,10 @@ input.o: input.c input.h encoder_opts.h macros.h
 input_no_bm.o: input.c input.h encoder_opts.h macros.h
 	$(CC) $(CFLAGS) input.c -c -o input_no_bm.o
 
-encoder.o: encoder.c encoder.h encoder_opts.h macros.h
+h264_hrd.o: h264_hrd.c h264_hrd.h
+	$(CC) $(CFLAGS) h264_hrd.c -c -o h264_hrd.o
+
+encoder.o: encoder.c encoder.h encoder_opts.h macros.h h264_hrd.h
 	$(CC) $(CFLAGS) encoder.c -c -o encoder.o
 
 output.o: output.c output.h encoder_opts.h macros.h
